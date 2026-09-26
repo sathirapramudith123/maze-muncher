@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pac-Man Arcade</title>
-<meta name="description" content="Play Pac-Man in your browser: four mazes, three difficulties, top 5 high scores, and swipe or d-pad controls on phones.">
+<title>Maze Muncher</title>
+<meta name="description" content="Maze Muncher: a maze-chase arcade game in your browser, with four mazes, three difficulties, achievements, a maze editor, and swipe or d-pad controls on phones.">
 <meta name="theme-color" content="#07081a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23ffd52e' d='M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -144,7 +144,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: max(8px, 2.4cqh);
     padding: 5cqw;
     box-sizing: border-box;
@@ -153,11 +153,16 @@
     overflow-y: auto;
     text-align: center;
   }
+  /* centre the content, but let a tall screen scroll from its top instead of clipping it */
+  .overlay > :first-child { margin-top: auto; }
+  .overlay > :last-child { margin-bottom: auto; }
   .logo {
     margin: 0;
     font-family: var(--display);
     font-weight: 400;
-    font-size: max(24px, 9.5cqw);
+    font-size: max(20px, 6.6cqw);
+    text-align: center;
+    text-wrap: balance;
     color: var(--pac);
     text-shadow: 0 0 18px rgba(255, 213, 46, .45);
     letter-spacing: .04em;
@@ -204,6 +209,107 @@
   .btn.quiet { background: transparent; color: var(--ink); border-color: var(--line); }
   .btn-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
   .keys { margin: 0; color: var(--dim); font-size: max(11px, 2.3cqw); max-width: 46ch; }
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(100%, 440px); }
+  .menu-grid .btn { font-size: max(9px, 2cqw); padding: max(9px, 1.8cqw) 8px; }
+  .linkish {
+    background: none;
+    border: 0;
+    color: var(--dim);
+    font-family: var(--display);
+    font-size: max(8px, 1.8cqw);
+    padding: 6px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* how to play */
+  .help-body { width: min(100%, 500px); display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .help-body h3 { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: max(10px, 2.3cqw); color: var(--pac); }
+  .help-body p { margin: 0; font-size: max(13px, 2.6cqw); line-height: 1.4; }
+  .help-item { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: center; }
+  .help-item svg, .ghost-card svg { width: 30px; height: 30px; display: block; }
+  .ghost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+  .ghost-card {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 2px 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  .ghost-card b { font-family: var(--display); font-weight: 400; font-size: max(9px, 2cqw); }
+  .ghost-card span { grid-column: 2; color: var(--dim); font-size: max(12px, 2.4cqw); }
+  .ghost-card svg { grid-row: span 2; }
+
+  /* achievements */
+  .ach-list { width: min(100%, 540px); display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .ach {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 2px 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+  .ach svg { width: 26px; height: 26px; grid-row: span 2; }
+  .ach b { font-family: var(--display); font-weight: 400; font-size: max(9px, 1.9cqw); color: var(--pac); }
+  .ach span { color: var(--ink); font-size: max(12px, 2.3cqw); }
+  .ach.locked { opacity: .5; }
+  .ach.locked b { color: var(--dim); }
+  .toast {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--pac);
+    background: rgba(16, 19, 46, .96);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .5);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast svg { width: 26px; height: 26px; flex: none; }
+  .toast small { display: block; font-family: var(--display); font-size: 8px; color: var(--pac); margin-bottom: 4px; }
+  .toast strong { font-family: var(--display); font-weight: 400; font-size: 11px; }
+
+  /* maze editor */
+  .editor-bar {
+    flex: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tools, .editor-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+  .tool, .editor-actions button {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 2px solid var(--line);
+    background: var(--panel);
+    font-family: var(--display);
+    font-size: 8px;
+  }
+  .tool[aria-pressed="true"] { border-color: var(--pac); background: var(--panel-2); color: var(--pac); }
+  .tool svg { width: 16px; height: 16px; display: block; }
+  .editor-actions .primary { background: var(--pac); border-color: var(--pac); color: #1a1400; }
+  .check { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 8px; padding: 0 6px; }
+  .editor-msg { margin: 0; min-height: 1.4em; text-align: center; color: var(--dim); font-size: 13px; }
+  .editor-msg.error { color: var(--hard); }
+  .editor-msg.ok { color: var(--easy); }
+  body.editing .pad { display: none !important; }
 
   .table { width: min(100%, 360px); display: flex; flex-direction: column; gap: 2px; }
   .table h3 { margin: 0 0 4px; font-family: var(--display); font-weight: 400; font-size: max(11px, 2.6cqw); }
@@ -289,18 +395,58 @@
       <span class="power-label" id="power-label">POWER</span>
     </div>
     <div class="screen" id="screen">
-      <canvas id="game" aria-label="Pac-Man game board"></canvas>
+      <canvas id="game" aria-label="Maze Muncher game board"></canvas>
 
       <section class="overlay" id="ov-menu">
-        <h1 class="logo">PAC-MAN</h1>
+        <h1 class="logo">MAZE MUNCHER</h1>
         <p class="sub">Choose a difficulty to start</p>
         <div class="diffs" id="diffs">
           <button class="diff" type="button" data-d="EASY"><span class="dname">1 EASY</span><span class="dhi">HI 0</span><span class="ddesc">5 lives, slow ghosts, 10s power-ups</span></button>
           <button class="diff" type="button" data-d="MEDIUM"><span class="dname">2 MEDIUM</span><span class="dhi">HI 0</span><span class="ddesc">3 lives, classic ghosts, 8s power-ups</span></button>
           <button class="diff" type="button" data-d="HARD"><span class="dname">3 HARD</span><span class="dhi">HI 0</span><span class="ddesc">3 lives, fast smart ghosts, 5s power-ups</span></button>
         </div>
-        <div class="btn-row"><button class="btn quiet" id="btn-scores" type="button">TOP 5 SCORES</button></div>
-        <p class="keys">Keyboard: arrows or WASD to move, P to pause, M for sound. Phone: swipe on the maze or use the pad.</p>
+        <div class="menu-grid">
+          <button class="btn quiet" id="btn-help" type="button">HOW TO PLAY</button>
+          <button class="btn quiet" id="btn-scores" type="button">TOP 5 SCORES</button>
+          <button class="btn quiet" id="btn-achievements" type="button">ACHIEVEMENTS <span id="ach-count"></span></button>
+          <button class="btn quiet" id="btn-editor" type="button">MAZE EDITOR</button>
+        </div>
+        <button class="btn" id="btn-play-custom" type="button" hidden>PLAY MY MAZE</button>
+        <button class="linkish" id="btn-vibrate" type="button" hidden>VIBRATION ON</button>
+      </section>
+
+      <section class="overlay" id="ov-help" hidden>
+        <h2>HOW TO PLAY</h2>
+        <div class="help-body">
+          <div class="help-item">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="#ffd52e" d="M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z"/><circle cx="11.9" cy="5.6" r="1.5" fill="#000"/></svg>
+            <p><b>Eat every pellet</b> in the maze to clear the level. Each pellet is worth 10 points. Don't let a ghost touch you.</p>
+          </div>
+          <div class="help-item">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="#fff"/></svg>
+            <p><b>Power pellets</b> turn the ghosts blue for a few seconds, and then you can eat them: 200, 400, 800 and 1600 points in a row. The <b>POWER</b> bar above the maze shows how long you have.</p>
+          </div>
+          <div class="help-item">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 19Q13 9 22 5M22 20Q20 12 22 5" stroke="#7a4a12" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="10" cy="23" r="6" fill="#e8202a"/><circle cx="22" cy="24" r="6" fill="#e8202a"/></svg>
+            <p><b>Bonus fruit</b> appears twice per level. It's worth 100 points on level 1 and up to 2000 later on.</p>
+          </div>
+          <div class="help-item">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="#4cd964" d="M10 17.5 3 10.8A4.2 4.2 0 0 1 10 5.2a4.2 4.2 0 0 1 7 5.6Z"/></svg>
+            <p>Score <b>10,000 points</b> for an extra life. The side exits are tunnels to the other side of the maze.</p>
+          </div>
+          <h3>THE GHOSTS</h3>
+          <div class="ghost-grid" id="ghost-grid"></div>
+          <h3>CONTROLS</h3>
+          <p><b>Computer:</b> arrow keys or W A S D to move, P to pause, M for sound.<br><b>Phone:</b> swipe on the maze, or use the arrow pad under it.</p>
+        </div>
+        <button class="btn" id="btn-help-close" type="button">GOT IT</button>
+      </section>
+
+      <section class="overlay" id="ov-achievements" hidden>
+        <h2>ACHIEVEMENTS</h2>
+        <p class="sub" id="ach-summary"></p>
+        <div class="ach-list" id="ach-list"></div>
+        <button class="btn" id="btn-ach-back" type="button">BACK</button>
       </section>
 
       <section class="overlay" id="ov-scores" hidden>
@@ -333,6 +479,21 @@
         <div class="table" id="over-table"></div>
         <button class="btn" id="btn-over-menu" type="button">BACK TO MENU</button>
       </section>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+
+    <div class="editor-bar" id="editor-bar" hidden>
+      <div class="tools" id="tools" aria-label="Drawing tool"></div>
+      <div class="editor-actions">
+        <label class="check" for="mirror"><input type="checkbox" id="mirror" checked> MIRROR</label>
+        <button type="button" id="ed-play" class="primary">SAVE &amp; PLAY</button>
+        <button type="button" id="ed-save">SAVE</button>
+        <button type="button" id="ed-classic">START FROM CLASSIC</button>
+        <button type="button" id="ed-clear">CLEAR</button>
+        <button type="button" id="ed-exit">EXIT</button>
+      </div>
+      <p class="editor-msg" id="editor-msg" role="status"></p>
     </div>
     <nav class="pad" id="pad" aria-label="Direction pad">
       <button type="button" data-dir="UP" style="grid-area: up" aria-label="Up"><svg viewBox="0 0 10 10"><path d="M5 1 9 8H1z"/></svg></button>
@@ -561,9 +722,63 @@ const Sound = {
   death() { this.play([[800, 150, 700], this.tone(120, 120)]); },
   extraLife() { this.play([this.tone(1047, 70), this.tone(1319, 70), this.tone(1568, 70), this.tone(2093, 160)]); },
   levelClear() { this.play([this.tone(523, 110), this.tone(659, 110), this.tone(784, 110), this.tone(1047, 250)]); },
+  achievement() { this.play([this.tone(784, 80), this.tone(988, 80), this.tone(1319, 180)]); },
   start() {
-    this.play([this.tone(494, 120), this.tone(988, 120), this.tone(740, 120), this.tone(622, 120),
-               this.tone(988, 90), this.tone(740, 180), this.tone(622, 240)]);
+    this.play([this.tone(392, 100), this.tone(523, 100), this.tone(659, 100), this.tone(523, 100),
+               this.tone(784, 140), this.tone(659, 100), this.tone(784, 100), this.tone(1047, 260)]);
+  },
+};
+
+// ------------------------------------------------------------------ vibration (phones that support it)
+const Haptics = {
+  supported: typeof navigator !== 'undefined' && 'vibrate' in navigator,
+  enabled: store.get('pacman.vibrate', true),
+  buzz(pattern) {
+    if (!this.supported || !this.enabled) return;
+    try { navigator.vibrate(pattern); } catch (e) { /* blocked: ignore */ }
+  },
+};
+
+// ------------------------------------------------------------------ achievements
+const ACHIEVEMENTS = [
+  { id: 'first_ghost', name: 'Ghost Hunter', desc: 'Eat a frightened ghost' },
+  { id: 'clean_sweep', name: 'Clean Sweep', desc: 'Eat all four ghosts with one power pellet' },
+  { id: 'close_call', name: 'Close Call', desc: 'Eat a ghost in the last 2 seconds of a power-up' },
+  { id: 'fruit', name: 'Fruit Lover', desc: 'Eat a bonus fruit' },
+  { id: 'level_clear', name: 'Maze Runner', desc: 'Clear a level' },
+  { id: 'flawless', name: 'Untouchable', desc: 'Clear a level without losing a life' },
+  { id: 'brave', name: 'Brave Heart', desc: 'Clear a level on Hard' },
+  { id: 'explorer', name: 'Explorer', desc: 'Reach level 4 and see all four mazes' },
+  { id: 'marathon', name: 'Marathon', desc: 'Reach level 6' },
+  { id: 'one_up', name: '1UP', desc: 'Score 10,000 points and earn an extra life' },
+  { id: 'high_roller', name: 'High Roller', desc: 'Score 30,000 points in one game' },
+  { id: 'architect', name: 'Architect', desc: 'Play a maze you built in the editor' },
+];
+const TROPHY = color => `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="${color}" d="M6 3h12v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 7.4 12H7a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 2 2V7zm14 0h-2v3a2 2 0 0 0 2-2z"/></svg>`;
+const Ach = {
+  got: (() => { const v = store.get('pacman.achievements', {}); return v && typeof v === 'object' ? v : {}; })(),
+  queue: [],
+  showing: false,
+  count() { return ACHIEVEMENTS.filter(a => this.got[a.id]).length; },
+  unlock(id) {
+    if (this.got[id]) return;
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a) return;
+    this.got[id] = Date.now();
+    store.set('pacman.achievements', this.got);
+    this.queue.push(a);
+    if (!this.showing) this.next();
+  },
+  next() {
+    const toast = document.getElementById('toast');
+    const a = this.queue.shift();
+    if (!a) { this.showing = false; toast.hidden = true; return; }
+    this.showing = true;
+    toast.innerHTML = TROPHY('#ffd52e') + `<div><small>ACHIEVEMENT UNLOCKED</small><strong>${a.name}</strong></div>`;
+    toast.hidden = false;
+    Sound.achievement();
+    Haptics.buzz([20, 40, 20]);
+    setTimeout(() => this.next(), 2800);
   },
 };
 
@@ -572,6 +787,8 @@ const G = {
   state: 'MENU', difficulty: 'MEDIUM', paused: false, queued: D.NONE, frame: 0, stateTimer: 0,
   scaredTimer: 0, ghostCombo: 0, modeTimer: 0, scatter: true,
   score: 0, hi: 0, lives: 3, level: 1, extraLife: false, lastRank: -1, playerName: '',
+  custom: null,          // a maze from the editor, or null for the built-in mazes
+  diedThisLevel: false,
 };
 let maze, walls, food, power, foodRemaining, foodEaten;
 let pac, facing = D.RIGHT, ghosts = [], popups = [];
@@ -593,7 +810,8 @@ function isWall(c, r) {
 }
 
 function loadMap() {
-  maze = MAZES[(G.level - 1) % MAZES.length];
+  maze = G.custom || MAZES[(G.level - 1) % MAZES.length];
+  let hasFruitSpot = false;
   walls = []; food = []; power = [];
   foodRemaining = 0; foodEaten = 0;
   ghosts = []; popups = [];
@@ -606,17 +824,19 @@ function loadMap() {
       food[r][c] = ch === ' ' || ch === 'F';
       power[r][c] = ch === '*';
       if (food[r][c] || power[r][c]) foodRemaining++;
-      if (ch === 'F') { fruitCol = c; fruitRow = r; }
+      if (ch === 'F') { fruitCol = c; fruitRow = r; hasFruitSpot = true; }
       if (ch === 'P') pac = entity(x, y);
-      if (GHOST_SPEC[ch]) {
-        const s = GHOST_SPEC[ch];
+      // 'G' (editor mazes) starts all four ghosts on one tile; they leave one after another
+      for (const kind of ch === 'G' ? ['r', 'p', 'b', 'o'] : GHOST_SPEC[ch] ? [ch] : []) {
+        const s = GHOST_SPEC[kind];
         ghosts.push(Object.assign(entity(x, y), {
-          kind: ch, color: s.color, scatterCol: s.scatter[0], scatterRow: s.scatter[1],
+          kind, color: s.color, scatterCol: s.scatter[0], scatterRow: s.scatter[1],
           baseRelease: s.release, release: s.release, scared: false, eaten: false,
         }));
       }
     }
   }
+  if (!hasFruitSpot) { fruitCol = pac.sx / TILE; fruitRow = pac.sy / TILE; }
   for (const g of ghosts) g.home = distancesFrom(g.sx / TILE, g.sy / TILE);
 }
 
@@ -648,7 +868,9 @@ function resetPositions() {
   G.scaredTimer = 0; G.modeTimer = 0; G.scatter = true;
 }
 
-function newGame(d) {
+function newGame(d, custom = null) {
+  G.custom = custom;
+  G.diedThisLevel = false;
   G.difficulty = d;
   G.hi = board(d).best();
   G.paused = false;
@@ -661,6 +883,7 @@ function newGame(d) {
   resetPositions();
   setState('READY');
   Sound.start();
+  if (custom) Ach.unlock('architect');
 }
 
 // ------------------------------------------------------------------ update
@@ -671,12 +894,16 @@ function update() {
     updatePlaying();
   } else if (G.state === 'DYING') {
     if (--G.stateTimer <= 0) {
-      if (G.lives <= 0) setState(board(G.difficulty).qualifies(G.score) ? 'NAME_ENTRY' : 'GAME_OVER');
+      // games on your own maze don't go on the top 5
+      if (G.lives <= 0) setState(!G.custom && board(G.difficulty).qualifies(G.score) ? 'NAME_ENTRY' : 'GAME_OVER');
       else { resetPositions(); setState('READY'); }
     }
   } else if (G.state === 'LEVEL_CLEAR') {
     if (--G.stateTimer <= 0) {
       G.level++;
+      G.diedThisLevel = false;
+      if (!G.custom && G.level >= 4) Ach.unlock('explorer');
+      if (!G.custom && G.level >= 6) Ach.unlock('marathon');
       loadMap();
       resetPositions();
       setState('READY');
@@ -695,6 +922,10 @@ function updatePlaying() {
     G.state = 'LEVEL_CLEAR';
     G.stateTimer = LEVEL_CLEAR;
     Sound.levelClear();
+    Haptics.buzz([40, 40, 40]);
+    Ach.unlock('level_clear');
+    if (!G.diedThisLevel) Ach.unlock('flawless');
+    if (G.difficulty === 'HARD') Ach.unlock('brave');
   }
 }
 
@@ -733,12 +964,14 @@ function eatAt(c, r) {
     addScore(50);
     onFoodEaten();
     frighten();
+    Haptics.buzz(25);
   }
   if (fruit && colOf(fruit) === c && rowOf(fruit) === r) {
     addScore(fruitKind.points);
     popups.push({ x: fruit.x, y: fruit.y, text: String(fruitKind.points), timer: POPUP });
     fruit = null;
     Sound.fruit();
+    Ach.unlock('fruit');
   }
 }
 
@@ -749,8 +982,11 @@ function addScore(points) {
     G.extraLife = true;
     G.lives++;
     Sound.extraLife();
+    Haptics.buzz([30, 50, 30]);
     popups.push({ x: pac.x, y: pac.y - TILE / 2, text: '1UP!', timer: POPUP * 2 });
+    Ach.unlock('one_up');
   }
+  if (G.score >= 30000) Ach.unlock('high_roller');
 }
 
 function onFoodEaten() {
@@ -856,13 +1092,19 @@ function checkCollisions() {
       addScore(points);
       popups.push({ x: g.x, y: g.y, text: String(points), timer: POPUP });
       Sound.eatGhost();
+      Haptics.buzz(45);
+      Ach.unlock('first_ghost');
+      if (G.ghostCombo === 4) Ach.unlock('clean_sweep');
+      if (G.scaredTimer < SCARED_WARNING) Ach.unlock('close_call');
       g.eaten = true;
       g.scared = false;
     } else {
       G.lives--;
+      G.diedThisLevel = true;
       G.state = 'DYING';
       G.stateTimer = DYING;
       Sound.death();
+      Haptics.buzz([90, 60, 180]);
       return true;
     }
   }
@@ -949,15 +1191,24 @@ function drawPac(x, y, dir, mouth) {
   ctx.arc(cx, cy, 14, a + mouth, a + Math.PI * 2 - mouth);
   ctx.closePath();
   ctx.fill();
+  // the Muncher's eye sits just above (or beside) the mouth
+  const [ex, ey] = { UP: [7, -2], DOWN: [7, 2], LEFT: [-3, -7] }[dir.name] || [3, -7];
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(cx + ex, cy + ey, 2.4, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawGhostBody(x, y, color) {
   const l = x + 3, r = x + 29, bottom = y + 29;
+  // antenna
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x + 16, y + 6); ctx.lineTo(x + 16, y + 2); ctx.stroke();
   ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x + 16, y + 2, 2, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath();
   ctx.moveTo(l, bottom);
-  ctx.lineTo(l, y + 16);
-  ctx.arc(x + 16, y + 16, 13, Math.PI, 0);
+  ctx.lineTo(l, y + 17);
+  ctx.arc(x + 16, y + 17, 13, Math.PI, 0);
   ctx.lineTo(r, bottom);
   const teeth = 4, w = (r - l) / teeth, lift = (G.frame >> 3) % 2 ? 4 : 3;
   for (let i = 0; i < teeth; i++) {
@@ -969,13 +1220,12 @@ function drawGhostBody(x, y, color) {
   ctx.fill();
 }
 
+/** The ghosts' single big eye (also all that's left of an eaten ghost). */
 function drawEyes(x, y, dir) {
-  for (const ex of [x + 11, x + 21]) {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.ellipse(ex, y + 14, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2121de';
-    ctx.beginPath(); ctx.arc(ex + dir.dx * 2, y + 14 + dir.dy * 2.5, 2.2, 0, Math.PI * 2); ctx.fill();
-  }
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(x + 16, y + 15.5, 6, 6.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2121de';
+  ctx.beginPath(); ctx.arc(x + 16 + dir.dx * 3, y + 16 + dir.dy * 3, 3, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawGhost(g) {
@@ -987,8 +1237,7 @@ function drawGhost(g) {
       drawGhostBody(x, g.y, warn ? '#f4f4ff' : '#2121de');
       const face = warn ? '#ff2d2d' : '#ffd0a8';
       ctx.fillStyle = face;
-      ctx.fillRect(x + 10, g.y + 11, 4, 4);
-      ctx.fillRect(x + 18, g.y + 11, 4, 4);
+      ctx.fillRect(x + 12, g.y + 12, 8, 4);      // squinting eye
       ctx.strokeStyle = face; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(x + 7, g.y + 22);
       for (let i = 1; i <= 6; i++) ctx.lineTo(x + 7 + i * 3, g.y + (i % 2 ? 19 : 22));
@@ -1020,6 +1269,12 @@ function render() {
   ctx.setTransform(sx, 0, 0, sy, 0, 0);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
+  if (G.state === 'EDITOR') {
+    renderEditor();
+    updateHud();
+    updatePower();
+    return;
+  }
 
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -1082,10 +1337,10 @@ function updatePower() {
 
 // ------------------------------------------------------------------ HUD and overlays
 const $ = id => document.getElementById(id);
-const PAC_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z"/></svg>';
+const PAC_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z"/><circle cx="11.9" cy="5.6" r="1.5" fill="#000"/></svg>';
 let hudCache = '';
 function updateHud() {
-  const inGame = G.state !== 'MENU' && G.state !== 'SCORES';
+  const inGame = !['MENU', 'SCORES', 'HELP', 'ACHIEVEMENTS', 'EDITOR'].includes(G.state);
   const key = [G.score, G.hi, G.level, G.lives, G.difficulty, inGame, G.state, G.paused, Sound.enabled].join('|');
   if (key === hudCache) return;
   hudCache = key;
@@ -1102,12 +1357,20 @@ function updateHud() {
   $('btn-sound').textContent = Sound.enabled ? 'SOUND ON' : 'SOUND OFF';
 }
 
-const OVERLAYS = { MENU: 'ov-menu', SCORES: 'ov-scores', NAME_ENTRY: 'ov-name', GAME_OVER: 'ov-over' };
+const OVERLAYS = {
+  MENU: 'ov-menu', SCORES: 'ov-scores', HELP: 'ov-help', ACHIEVEMENTS: 'ov-achievements',
+  NAME_ENTRY: 'ov-name', GAME_OVER: 'ov-over',
+};
 function setState(s) {
   G.state = s;
   syncOverlays();
   if (s === 'MENU') renderMenu();
   if (s === 'SCORES') renderAllScores();
+  if (s === 'ACHIEVEMENTS') renderAchievements();
+  if (s === 'HELP') {
+    $('ov-help').scrollTop = 0;
+    setTimeout(() => $('btn-help-close').focus({ preventScroll: true }), 30);   // keep the top of the page in view
+  }
   if (s === 'NAME_ENTRY') {
     $('name-score').textContent = G.score + '  ' + DIFFS[G.difficulty].label;
     const input = $('name-input');
@@ -1116,13 +1379,21 @@ function setState(s) {
   }
   if (s === 'GAME_OVER') {
     $('over-score').textContent = 'SCORE ' + G.score + '  LEVEL ' + G.level;
-    $('over-table').innerHTML = scoreTable(G.difficulty, G.lastRank);
+    $('over-table').innerHTML = G.custom
+      ? '<p class="sub">You played your own maze, so this score isn\'t added to the top 5.</p>'
+      : scoreTable(G.difficulty, G.lastRank);
     setTimeout(() => $('btn-over-menu').focus(), 30);
   }
 }
 function syncOverlays() {
   for (const [state, id] of Object.entries(OVERLAYS)) $(id).hidden = G.state !== state;
   $('ov-pause').hidden = !G.paused;
+  const editing = G.state === 'EDITOR';
+  if ($('editor-bar').hidden === editing) {
+    $('editor-bar').hidden = !editing;
+    document.body.classList.toggle('editing', editing);
+    if (typeof resize === 'function') resize();
+  }
 }
 
 function renderMenu() {
@@ -1131,7 +1402,28 @@ function renderMenu() {
     btn.classList.toggle('selected', d === G.difficulty);
     btn.querySelector('.dhi').textContent = 'HI ' + board(d).best();
   }
+  $('ach-count').textContent = Ach.count() + '/' + ACHIEVEMENTS.length;
+  $('btn-play-custom').hidden = !loadCustomMaze();
+  $('btn-play-custom').textContent = 'PLAY MY MAZE (' + DIFFS[G.difficulty].label + ')';
+  $('btn-vibrate').hidden = !Haptics.supported;
+  $('btn-vibrate').textContent = Haptics.enabled ? 'VIBRATION ON' : 'VIBRATION OFF';
 }
+
+function renderAchievements() {
+  $('ach-summary').textContent = Ach.count() + ' of ' + ACHIEVEMENTS.length + ' unlocked';
+  $('ach-list').innerHTML = ACHIEVEMENTS.map(a => {
+    const got = !!Ach.got[a.id];
+    return `<div class="ach${got ? '' : ' locked'}">${TROPHY(got ? '#ffd52e' : '#5a6090')}<b>${a.name}</b><span>${a.desc}</span></div>`;
+  }).join('');
+}
+
+const GHOST_SVG = color => `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6V2" stroke="${color}" stroke-width="1.6"/><circle cx="16" cy="2" r="2" fill="${color}"/><path fill="${color}" d="M3 29V17A13 13 0 0 1 29 17V29L25.75 26L22.5 29L19.25 26L16 29L12.75 26L9.5 29L6.25 26Z"/><ellipse cx="16" cy="15.5" rx="6" ry="6.5" fill="#fff"/><circle cx="16" cy="16" r="3" fill="#2121de"/></svg>`;
+$('ghost-grid').innerHTML = [
+  ['r', 'BLAZE', 'Chases you directly.'],
+  ['p', 'PETAL', 'Aims ahead of you to cut you off.'],
+  ['b', 'FROST', 'Works with Blaze to trap you.'],
+  ['o', 'SUNNY', 'Chases from afar, backs off when close.'],
+].map(([k, name, how]) => `<div class="ghost-card">${GHOST_SVG(GHOST_SPEC[k].color)}<b style="color:${GHOST_SPEC[k].color}">${name}</b><span>${how}</span></div>`).join('');
 
 function escapeHtml(s) { return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 function scoreTable(d, highlight) {
@@ -1161,6 +1453,220 @@ function toggleSound() {
   hudCache = '';
 }
 
+// ------------------------------------------------------------------ maze editor
+const CUSTOM_KEY = 'pacman.customMaze';
+const CUSTOM_WALL = '#19c3b0';
+const UNIQUE = 'PGF';                                        // tools that place a single marker
+const TOOLS = [
+  { ch: 'X', label: 'WALL', icon: `<svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="3" fill="${CUSTOM_WALL}"/></svg>` },
+  { ch: ' ', label: 'PELLET', icon: '<svg viewBox="0 0 16 16"><rect x="6" y="6" width="4" height="4" fill="#fff"/></svg>' },
+  { ch: '*', label: 'POWER', icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#fff"/></svg>' },
+  { ch: 'O', label: 'EMPTY', icon: '<svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="none" stroke="#9aa0cc" stroke-dasharray="3 2"/></svg>' },
+  { ch: 'P', label: 'MUNCHER', icon: '<svg viewBox="0 0 20 20"><path fill="#ffd52e" d="M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z"/><circle cx="11.9" cy="5.6" r="1.5" fill="#000"/></svg>' },
+  { ch: 'G', label: 'GHOSTS', icon: GHOST_SVG('#ff2d2d') },
+  { ch: 'F', label: 'FRUIT', icon: '<svg viewBox="0 0 32 32"><path d="M10 19Q13 9 22 5M22 20Q20 12 22 5" stroke="#7a4a12" stroke-width="2.5" fill="none"/><circle cx="10" cy="23" r="6" fill="#e8202a"/><circle cx="22" cy="24" r="6" fill="#e8202a"/></svg>' },
+];
+const ed = { grid: null, tool: 'X', painting: false, last: -1, hover: null, bad: null, clearArmed: 0 };
+
+function loadCustomMaze() {
+  const rows = store.get(CUSTOM_KEY, null);
+  const valid = Array.isArray(rows) && rows.length === ROWS &&
+    rows.every(r => typeof r === 'string' && r.length === COLS && !/[^XO *PGF]/.test(r));
+  return valid ? { name: 'MY MAZE', wall: CUSTOM_WALL, rows } : null;
+}
+function classicGrid() {
+  // the Classic maze, with its four ghost starts turned into the editor's single ghost marker
+  return MAZES[0].rows.map(r => r.replace('r', 'G').replace(/[pbo]/g, 'O').split(''));
+}
+function blankGrid() {
+  return Array.from({ length: ROWS }, (_, r) =>
+    Array.from({ length: COLS }, (_, c) => (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1 ? 'X' : ' ')));
+}
+function setEditorMsg(text, kind = '') {
+  const el = $('editor-msg');
+  el.textContent = text;
+  el.className = 'editor-msg' + (kind ? ' ' + kind : '');
+}
+function renderTools() {
+  $('tools').innerHTML = TOOLS.map(t =>
+    `<button type="button" class="tool" data-ch="${t.ch}" aria-pressed="${t.ch === ed.tool}">${t.icon}${t.label}</button>`).join('');
+  for (const b of document.querySelectorAll('.tool')) {
+    b.addEventListener('click', () => { ed.tool = b.dataset.ch; renderTools(); });
+  }
+}
+function openEditor() {
+  const saved = loadCustomMaze();
+  ed.grid = saved ? saved.rows.map(r => r.split('')) : classicGrid();
+  ed.bad = null;
+  renderTools();
+  setEditorMsg(saved ? 'Your saved maze. Tap or drag on the maze to draw.' : 'Starting from the Classic maze. Tap or drag on the maze to draw.');
+  G.paused = false;
+  setState('EDITOR');
+}
+
+function paintCell(r, c, first) {
+  if (r <= 0 || r >= ROWS - 1 || c < 0 || c >= COLS) return;   // top and bottom rows stay walls
+  const t = ed.tool;
+  ed.bad = null;
+  if (UNIQUE.includes(t)) {
+    if (!first) return;
+    if (c === 0 || c === COLS - 1) {
+      setEditorMsg('Put the Muncher, the ghosts and the fruit inside the maze, not on its edge.', 'error');
+      return;
+    }
+    for (const row of ed.grid) for (let i = 0; i < COLS; i++) if (row[i] === t) row[i] = ' ';
+    ed.grid[r][c] = t;
+    return;
+  }
+  ed.grid[r][c] = t;
+  const m = COLS - 1 - c;
+  if ($('mirror').checked && m !== c && !UNIQUE.includes(ed.grid[r][m])) ed.grid[r][m] = t;
+}
+
+/** @returns a list of problems; empty when the maze can be played */
+function validateMaze(g) {
+  const errs = [];
+  const count = ch => g.reduce((n, row) => n + row.filter(x => x === ch).length, 0);
+  if (count('P') !== 1) errs.push('Place the Muncher with the MUNCHER tool.');
+  if (count('G') !== 1) errs.push('Place the ghosts with the GHOSTS tool.');
+  if (count(' ') + count('*') + count('F') === 0) errs.push('Add at least one pellet.');
+  for (let r = 0; r < ROWS; r++) {
+    if ((g[r][0] !== 'X') !== (g[r][COLS - 1] !== 'X')) {
+      errs.push(`Row ${r + 1}: a tunnel needs an opening on both the left and the right edge.`);
+      break;
+    }
+  }
+  if (errs.length) return errs;
+
+  const start = g.flatMap((row, r) => row.map((ch, c) => (ch === 'P' ? [r, c] : null))).find(Boolean);
+  const seen = new Set([start[0] * COLS + start[1]]);
+  const queue = [start];
+  for (let i = 0; i < queue.length; i++) {
+    const [r0, c0] = queue[i];
+    for (const d of TURN_ORDER) {
+      const r = r0 + d.dy, c = mod(c0 + d.dx, COLS);
+      if (r < 0 || r >= ROWS || g[r][c] === 'X' || seen.has(r * COLS + c)) continue;
+      seen.add(r * COLS + c);
+      queue.push([r, c]);
+    }
+  }
+  const bad = new Set();
+  let ghostsOk = true;
+  g.forEach((row, r) => row.forEach((ch, c) => {
+    if (seen.has(r * COLS + c)) return;
+    if (ch === ' ' || ch === '*' || ch === 'F') bad.add(r * COLS + c);
+    if (ch === 'G') { ghostsOk = false; bad.add(r * COLS + c); }
+  }));
+  const lost = bad.size - (ghostsOk ? 0 : 1);
+  if (lost) errs.push(`${lost} pellet${lost > 1 ? 's' : ''} can't be reached from the Muncher (marked in red). Open a path or remove them.`);
+  if (!ghostsOk) errs.push('The ghosts are walled off from the Muncher.');
+  ed.bad = bad.size ? bad : null;
+  return errs;
+}
+
+function saveMaze() {
+  const errs = validateMaze(ed.grid);
+  if (errs.length) {
+    setEditorMsg(errs[0] + (errs.length > 1 ? ` (and ${errs.length - 1} more)` : ''), 'error');
+    return false;
+  }
+  store.set(CUSTOM_KEY, ed.grid.map(r => r.join('')));
+  setEditorMsg('Saved. Pick "PLAY MY MAZE" on the menu any time.', 'ok');
+  return true;
+}
+
+function renderEditor() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = c * TILE, y = r * TILE, ch = ed.grid[r][c];
+      if (ch === 'X') {
+        ctx.fillStyle = r === 0 || r === ROWS - 1 ? '#0f6e64' : CUSTOM_WALL;
+        roundRect(x + 2, y + 2, TILE - 4, TILE - 4, 6);
+      } else if (ch === ' ') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 14, y + 14, 4, 4);
+      } else if (ch === '*') {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(x + 16, y + 16, 9, 0, Math.PI * 2); ctx.fill();
+      } else if (ch === 'P') {
+        drawPac(x, y, D.RIGHT, 0.55);
+      } else if (ch === 'G') {
+        drawGhostBody(x, y, '#ff2d2d');
+        drawEyes(x, y, D.NONE);
+      } else if (ch === 'F') {
+        ctx.save(); ctx.translate(x, y); FRUITS[0].draw(ctx); ctx.restore();
+      }
+      if (ed.bad && ed.bad.has(r * COLS + c)) {
+        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3;
+        ctx.strokeRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      }
+    }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.07)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let c = 1; c < COLS; c++) { ctx.moveTo(c * TILE + 0.5, 0); ctx.lineTo(c * TILE + 0.5, H); }
+  for (let r = 1; r < ROWS; r++) { ctx.moveTo(0, r * TILE + 0.5); ctx.lineTo(W, r * TILE + 0.5); }
+  ctx.stroke();
+  if ($('mirror').checked) {
+    ctx.strokeStyle = 'rgba(255,213,46,.35)';
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (ed.hover) {
+    const [r, c] = ed.hover;
+    if (r > 0 && r < ROWS - 1 && c >= 0 && c < COLS) {
+      ctx.strokeStyle = '#ffd52e'; ctx.lineWidth = 2;
+      ctx.strokeRect(c * TILE + 1, r * TILE + 1, TILE - 2, TILE - 2);
+    }
+  }
+}
+
+function cellFromEvent(e) {
+  const b = canvas.getBoundingClientRect();
+  return [Math.floor((e.clientY - b.top) / b.height * ROWS), Math.floor((e.clientX - b.left) / b.width * COLS)];
+}
+canvas.addEventListener('pointerdown', e => {
+  if (G.state !== 'EDITOR') return;
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* not supported */ }
+  const [r, c] = cellFromEvent(e);
+  ed.painting = true;
+  ed.last = r * COLS + c;
+  paintCell(r, c, true);
+});
+canvas.addEventListener('pointermove', e => {
+  if (G.state !== 'EDITOR') return;
+  const [r, c] = cellFromEvent(e);
+  ed.hover = e.pointerType === 'mouse' ? [r, c] : null;
+  if (!ed.painting || r * COLS + c === ed.last) return;
+  ed.last = r * COLS + c;
+  paintCell(r, c, false);
+});
+canvas.addEventListener('pointerleave', () => { ed.hover = null; });
+addEventListener('pointerup', () => { ed.painting = false; });
+
+$('ed-save').addEventListener('click', saveMaze);
+$('ed-play').addEventListener('click', () => { if (saveMaze()) newGame(G.difficulty, loadCustomMaze()); });
+$('ed-classic').addEventListener('click', () => {
+  ed.grid = classicGrid(); ed.bad = null;
+  setEditorMsg('Loaded the Classic maze. Change anything you like.');
+});
+$('ed-clear').addEventListener('click', () => {
+  const btn = $('ed-clear');
+  if (Date.now() - ed.clearArmed < 3000) {
+    ed.grid = blankGrid(); ed.bad = null; ed.clearArmed = 0;
+    btn.textContent = 'CLEAR';
+    setEditorMsg('Cleared. Draw walls, then place the Muncher and the ghosts.');
+  } else {
+    ed.clearArmed = Date.now();
+    btn.textContent = 'TAP AGAIN TO CLEAR';
+    setTimeout(() => { if (Date.now() - ed.clearArmed >= 3000) btn.textContent = 'CLEAR'; }, 3100);
+  }
+});
+$('ed-exit').addEventListener('click', () => setState('MENU'));
+
 // ------------------------------------------------------------------ input
 function steer(d) {
   Sound.ensure();
@@ -1186,7 +1692,9 @@ addEventListener('keydown', e => {
     else if (k === 'h' || k === 'H') setState('SCORES');
     return;
   }
-  if (G.state === 'SCORES') { if (!(e.target instanceof HTMLButtonElement)) setState('MENU'); return; }
+  if (G.state === 'SCORES' || G.state === 'ACHIEVEMENTS') { if (!(e.target instanceof HTMLButtonElement)) setState('MENU'); return; }
+  if (G.state === 'HELP') { if (!(e.target instanceof HTMLButtonElement)) closeHelp(); return; }
+  if (G.state === 'EDITOR') { if (k === 'Escape') setState('MENU'); return; }
   if (G.state === 'GAME_OVER' || G.state === 'NAME_ENTRY') return;   // handled by their buttons
   if (G.paused && (k === 'q' || k === 'Q')) { quitToMenu(); return; }
   if (G.state === 'READY' && k === 'Escape') { setState('MENU'); return; }
@@ -1216,6 +1724,19 @@ for (const btn of document.querySelectorAll('.diff')) {
   btn.addEventListener('focus', () => { G.difficulty = btn.dataset.d; renderMenu(); });
 }
 $('btn-scores').addEventListener('click', () => setState('SCORES'));
+function closeHelp() { store.set('pacman.seenHelp', true); setState('MENU'); }
+$('btn-help').addEventListener('click', () => setState('HELP'));
+$('btn-help-close').addEventListener('click', closeHelp);
+$('btn-achievements').addEventListener('click', () => setState('ACHIEVEMENTS'));
+$('btn-ach-back').addEventListener('click', () => setState('MENU'));
+$('btn-editor').addEventListener('click', openEditor);
+$('btn-play-custom').addEventListener('click', () => { Sound.ensure(); const m = loadCustomMaze(); if (m) newGame(G.difficulty, m); });
+$('btn-vibrate').addEventListener('click', () => {
+  Haptics.enabled = !Haptics.enabled;
+  store.set('pacman.vibrate', Haptics.enabled);
+  Haptics.buzz(30);
+  renderMenu();
+});
 $('btn-scores-back').addEventListener('click', () => setState('MENU'));
 $('btn-over-menu').addEventListener('click', () => setState('MENU'));
 $('btn-resume').addEventListener('click', () => setPaused(false));
@@ -1242,7 +1763,9 @@ const pad = $('pad');
 function resize() {
   const padSpace = pad.offsetHeight ? pad.offsetHeight + 14 : 0;   // the d-pad only shows on touch screens
   const powerSpace = powerEl.offsetHeight + 14;                      // the countdown strip above the maze
-  const s = Math.min(stage.clientWidth / W, (stage.clientHeight - padSpace - powerSpace) / H);
+  const editorBar = $('editor-bar');
+  const editorSpace = editorBar.hidden ? 0 : editorBar.offsetHeight + 14;
+  const s = Math.min(stage.clientWidth / W, (stage.clientHeight - padSpace - powerSpace - editorSpace) / H);
   const cw = Math.max(1, Math.floor(W * s)), ch = Math.max(1, Math.floor(H * s));
   screenEl.style.width = cw + 'px';
   powerEl.style.width = cw + 'px';
@@ -1256,7 +1779,7 @@ new ResizeObserver(resize).observe(stage);
 
 loadMap();
 resetPositions();
-setState('MENU');
+setState(store.get('pacman.seenHelp', false) ? 'MENU' : 'HELP');
 resize();
 
 let last = performance.now(), acc = 0;
