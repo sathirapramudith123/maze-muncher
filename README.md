@@ -36,6 +36,7 @@
 - [How to play](#how-to-play)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
+- [Browser extras](#browser-extras)
 - [Make your own maze](#make-your-own-maze)
 - [සිංහලෙන්](#සිංහලෙන්)
 
@@ -56,6 +57,10 @@
 | ⏱️ **Power-up timer** | A labelled bar counts down the seconds the ghosts stay frightened, and flashes yellow and red before it ends |
 | 🔊 **Retro sound** | Every sound effect is generated in code, so there are no audio files |
 | 🌐 **Browser version** | Same game in a single HTML file, with swipe and d-pad controls for phones |
+| 🏅 **Achievements** *(browser)* | Twelve badges to unlock, from *Ghost Hunter* to *Architect* |
+| ✏️ **Maze editor** *(browser)* | Draw your own maze, check it, save it and play it |
+| 📳 **Vibration** *(browser, phones)* | The phone buzzes when you eat a power pellet or a ghost, and when you die |
+| ❓ **How to play** *(browser)* | A short guide with the ghosts' personalities, shown on your first visit |
 
 ---
 
@@ -173,6 +178,56 @@ If your final score makes the top 5 for your difficulty, you're asked for your n
 
 - **Java version:** saved in your home folder as `.pacman_scores_easy`, `.pacman_scores_medium` and `.pacman_scores_hard`.
 - **Browser version:** saved in that browser only.
+
+---
+
+## Browser extras
+
+These are in the browser version only (`web/index.html` and the GitHub Pages site).
+
+### How to play
+
+A short guide opens the first time someone visits, covering the rules, scoring, the four ghosts and
+the controls. It's always available from **HOW TO PLAY** on the menu.
+
+### Achievements
+
+Open **ACHIEVEMENTS** on the menu to see which ones you've unlocked. A banner pops up the moment
+you earn one.
+
+| Achievement | How to unlock it |
+| --- | --- |
+| Ghost Hunter | Eat a frightened ghost |
+| Clean Sweep | Eat all four ghosts with one power pellet |
+| Close Call | Eat a ghost in the last 2 seconds of a power-up |
+| Fruit Lover | Eat a bonus fruit |
+| Maze Runner | Clear a level |
+| Untouchable | Clear a level without losing a life |
+| Brave Heart | Clear a level on Hard |
+| Explorer | Reach level 4 and see all four mazes |
+| Marathon | Reach level 6 |
+| 1UP | Score 10,000 points and earn an extra life |
+| High Roller | Score 30,000 points in one game |
+| Architect | Play a maze you built in the editor |
+
+### Maze editor
+
+Open **MAZE EDITOR** on the menu. It starts from your saved maze, or from the Classic maze.
+
+1. Pick a tool: **Wall**, **Pellet**, **Power** pellet, **Empty** floor, **Pac-Man**, **Ghosts** or **Fruit** spot.
+2. Tap or drag on the maze to draw. With **Mirror** on, whatever you draw on one side is copied to the other.
+3. Press **SAVE & PLAY**. The editor checks the maze first: Pac-Man and the ghosts must be placed,
+   every pellet must be reachable (unreachable ones are outlined in red), and a tunnel needs an
+   opening on both edges of its row.
+
+Your maze is saved in the browser. Play it again any time with **PLAY MY MAZE** on the menu, at the
+difficulty you have selected. Games on your own maze don't go on the top 5 high scores.
+
+### Vibration
+
+On phones that support it, the game buzzes when you eat a power pellet or a ghost, clear a level, earn
+an extra life or an achievement, and when you're caught. Turn it off with **VIBRATION ON/OFF** on the
+menu. (iPhones don't let websites vibrate.)
 
 ---
 
