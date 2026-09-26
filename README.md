@@ -257,6 +257,8 @@ pacman/
 │       ├── Mazes.java        # The four maze layouts
 │       ├── Fruit.java        # Bonus fruit types, points and drawings
 │       ├── ScoreBoard.java   # Top 5 high scores per difficulty
+│       ├── Achievements.java # The twelve badges and the unlock banner
+│       ├── MazeEditor.java   # Draw, check and save your own maze
 │       ├── Sound.java        # Synthesized retro sound effects
 │       └── *.png             # Sprites for walls, ghosts, power pellets and the cherry
 ├── web/
