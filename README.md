@@ -53,7 +53,7 @@
 | 🎚️ **Three difficulties** | Easy, Medium and Hard change lives, ghost speed, ghost smarts and power-up time |
 | 🏆 **Top 5 high scores** | Enter your name when you make the table; each difficulty has its own |
 | ❤️ **Extra life** | One bonus life at 10,000 points |
-| ⏱️ **Power-up timer** | A bar shows how long the ghosts stay frightened and flashes before it ends |
+| ⏱️ **Power-up timer** | A labelled bar counts down the seconds the ghosts stay frightened, and flashes yellow and red before it ends |
 | 🔊 **Retro sound** | Every sound effect is generated in code, so there are no audio files |
 | 🌐 **Browser version** | Same game in a single HTML file, with swipe and d-pad controls for phones |
 
@@ -114,7 +114,8 @@ The workflow in `.github/workflows/pages.yml` publishes the `web` folder to GitH
 
 Eat every pellet in the maze to clear the level, and don't let a ghost catch you.
 Eat a **power pellet** (the big white dots in the corners) and the ghosts turn blue and run away.
-That's your chance to eat them.
+That's your chance to eat them, but only for a few seconds: the **POWER** bar just above the maze counts down
+how long you have left, and flashes yellow and red just before the ghosts turn dangerous again.
 
 ### Scoring
 

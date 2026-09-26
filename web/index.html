@@ -100,6 +100,43 @@
     touch-action: none;
   }
 
+  /* power-up countdown, shown above the maze while the ghosts are frightened */
+  .power {
+    position: relative;
+    flex: none;
+    height: 26px;
+    box-sizing: border-box;
+    border-radius: 13px;
+    border: 2px solid #3355ff;
+    background: var(--panel);
+    overflow: hidden;
+    visibility: hidden;
+  }
+  .power.on { visibility: visible; }
+  .power-fill {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    border-radius: 8px;
+    background: #3355ff;
+  }
+  .power-label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--display);
+    font-size: 10px;
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+    font-variant-numeric: tabular-nums;
+  }
+  .power.ending { border-color: #ffd52e; }
+  .power.ending .power-fill { background: #ffd52e; }
+  .power.ending.flash { border-color: #ff3b30; }
+  .power.ending.flash .power-fill { background: #ff3b30; }
+
   /* menus drawn over the play field */
   .overlay {
     position: absolute;
@@ -247,6 +284,10 @@
   </header>
 
   <main class="stage" id="stage">
+    <div class="power" id="power" aria-hidden="true">
+      <div class="power-fill" id="power-fill"></div>
+      <span class="power-label" id="power-label">POWER</span>
+    </div>
     <div class="screen" id="screen">
       <canvas id="game" aria-label="Pac-Man game board"></canvas>
 
@@ -726,6 +767,7 @@ function frighten() {
   G.scaredTimer = DIFFS[G.difficulty].scared;
   G.ghostCombo = 0;
   Sound.powerUp();
+  popups.push({ x: pac.x, y: pac.y - TILE / 2, text: 'POWER UP!', timer: POPUP * 3 / 2 });
   for (const g of ghosts) {
     if (g.eaten) continue;
     g.scared = true;
@@ -958,15 +1000,6 @@ function drawGhost(g) {
   }
 }
 
-function drawTimerBar() {
-  const x = TILE * 2, w = W - TILE * 4, y = TILE / 2 - 5;
-  ctx.fillStyle = 'rgba(0,0,0,.78)';
-  roundRect(x - 3, y - 3, w + 6, 16, 5);
-  const warn = G.scaredTimer < SCARED_WARNING && (G.frame / 6 | 0) % 2 === 0;
-  ctx.fillStyle = warn ? '#ffffff' : '#3355ff';
-  roundRect(x, y, w * G.scaredTimer / DIFFS[G.difficulty].scared, 10, 4);
-}
-
 function drawBanner(title, subtitle, color) {
   const cy = 13 * TILE;
   ctx.fillStyle = 'rgba(0,0,0,.78)';
@@ -1007,7 +1040,6 @@ function render() {
   if (fruit) {
     ctx.save(); ctx.translate(fruit.x, fruit.y); fruitKind.draw(ctx); ctx.restore();
   }
-  if (G.scaredTimer > 0 && G.state === 'PLAYING') drawTimerBar();
 
   const ended = G.state === 'GAME_OVER' || G.state === 'NAME_ENTRY';
   if (G.state !== 'LEVEL_CLEAR' && G.state !== 'DYING' && !ended) ghosts.forEach(drawGhost);
@@ -1026,6 +1058,26 @@ function render() {
   if (G.state === 'LEVEL_CLEAR') drawBanner('LEVEL ' + G.level + ' CLEAR!', null, '#29e6ff');
 
   updateHud();
+  updatePower();
+}
+
+const powerEl = document.getElementById('power');
+let powerCache = '';
+/** Countdown bar above the maze: how long the ghosts stay frightened. */
+function updatePower() {
+  const on = G.scaredTimer > 0 && G.state === 'PLAYING';
+  const ending = on && G.scaredTimer < SCARED_WARNING;
+  const flash = ending && (G.frame / 5 | 0) % 2 === 0;
+  const pct = on ? (G.scaredTimer / DIFFS[G.difficulty].scared) * 100 : 0;
+  const secs = Math.ceil(G.scaredTimer * FRAME_MS / 1000);
+  const key = [on, ending, flash, pct.toFixed(1), secs].join('|');
+  if (key === powerCache) return;
+  powerCache = key;
+  powerEl.classList.toggle('on', on);
+  powerEl.classList.toggle('ending', ending);
+  powerEl.classList.toggle('flash', flash);
+  document.getElementById('power-fill').style.width = `calc((100% - 6px) * ${pct / 100})`;
+  document.getElementById('power-label').textContent = 'POWER ' + secs + 's';
 }
 
 // ------------------------------------------------------------------ HUD and overlays
@@ -1189,9 +1241,11 @@ const stage = $('stage'), screenEl = $('screen');
 const pad = $('pad');
 function resize() {
   const padSpace = pad.offsetHeight ? pad.offsetHeight + 14 : 0;   // the d-pad only shows on touch screens
-  const s = Math.min(stage.clientWidth / W, (stage.clientHeight - padSpace) / H);
+  const powerSpace = powerEl.offsetHeight + 14;                      // the countdown strip above the maze
+  const s = Math.min(stage.clientWidth / W, (stage.clientHeight - padSpace - powerSpace) / H);
   const cw = Math.max(1, Math.floor(W * s)), ch = Math.max(1, Math.floor(H * s));
   screenEl.style.width = cw + 'px';
+  powerEl.style.width = cw + 'px';
   screenEl.style.height = ch + 'px';
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.round(cw * dpr);
