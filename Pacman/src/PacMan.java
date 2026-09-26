@@ -494,6 +494,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         scaredTimer = difficulty.scaredFrames;
         ghostCombo = 0;
         sound.powerUp();
+        popups.add(new Popup(pacman.x, pacman.y - tileSize / 2, "POWER UP!", POPUP_FRAMES * 3 / 2));
         for (Ghost ghost : ghosts) {
             if (ghost.eaten) continue;
             ghost.scared = true;
@@ -746,17 +747,32 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    /** Bar along the top wall showing how long the ghosts stay frightened. */
+    /** Labelled bar across the top wall counting down how long the ghosts stay frightened. */
     private void drawScaredTimerBar(Graphics2D g) {
-        int trackX = tileSize * 2;
-        int trackW = boardWidth - tileSize * 4;
-        int y = tileSize / 2 - 5;
-        g.setColor(new Color(0, 0, 0, 200));
-        g.fillRoundRect(trackX - 3, y - 3, trackW + 6, 16, 10, 10);
-        boolean warning = scaredTimer < SCARED_WARNING_FRAMES && (frame / 6) % 2 == 0;
-        g.setColor(warning ? Color.WHITE : new Color(0x3355FF));
-        int w = trackW * scaredTimer / difficulty.scaredFrames;
-        g.fillRoundRect(trackX, y, w, 10, 8, 8);
+        int trackX = tileSize;
+        int trackW = boardWidth - tileSize * 2;
+        int y = 4;
+        int h = tileSize - 8;
+        boolean ending = scaredTimer < SCARED_WARNING_FRAMES;
+        boolean flash = ending && (frame / 5) % 2 == 0;
+        Color fill = !ending ? new Color(0x3355FF) : flash ? new Color(0xFF3B30) : new Color(0xFFD52E);
+
+        g.setColor(new Color(0, 0, 0, 225));
+        g.fillRoundRect(trackX, y, trackW, h, h, h);
+        g.setColor(fill);
+        g.fillRoundRect(trackX + 3, y + 3, (trackW - 6) * scaredTimer / difficulty.scaredFrames, h - 6, h - 6, h - 6);
+        g.setStroke(new BasicStroke(2));
+        g.drawRoundRect(trackX, y, trackW, h, h, h);
+        g.setStroke(new BasicStroke(1));
+
+        int seconds = (int) Math.ceil(scaredTimer * FRAME_MS / 1000.0);
+        String label = "POWER  " + seconds + "s";
+        g.setFont(new Font("Arial", Font.BOLD, 15));
+        int textY = y + h / 2 + 5;
+        g.setColor(Color.BLACK);
+        g.drawString(label, trackX + 13, textY + 1);
+        g.setColor(Color.WHITE);
+        g.drawString(label, trackX + 12, textY);
     }
 
     /** Half-angle of pac man's mouth: chomps while moving, opens up and vanishes when he dies. */
