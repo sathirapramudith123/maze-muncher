@@ -49,6 +49,10 @@ public class Sound {
         play(concat(sweep(800, 150, 700), tone(120, 120)));
     }
 
+    public void extraLife() {
+        play(concat(tone(1047, 70), tone(1319, 70), tone(1568, 70), tone(2093, 160)));
+    }
+
     public void levelClear() {
         play(concat(tone(523, 110), tone(659, 110), tone(784, 110), tone(1047, 250)));
     }

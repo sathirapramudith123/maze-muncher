@@ -1,10 +1,17 @@
 # Pac-Man
 
-A Pac-Man clone written in Java Swing.
+A Pac-Man clone written in Java Swing, plus a browser version of the same game.
 
 ## Run
 
-Requires a JDK (11+).
+### Desktop (Java)
+
+Requires a JDK (11+), e.g. from https://adoptium.net.
+
+- **Windows:** double-click `run.bat`.
+- **macOS / Linux:** run `./run.sh`.
+
+Both compile the game and start it. To do it by hand:
 
 ```sh
 cd Pacman/src
@@ -13,6 +20,13 @@ java App
 ```
 
 (Or open the `Pacman` folder in VS Code with the Java extension and run `App`.)
+
+### Browser (no Java needed)
+
+Open `web/index.html` in any browser, by double-clicking it or by hosting the `web` folder
+(for example with GitHub Pages). It has the same mazes, ghosts, difficulties and scoring as the
+Java version. On a phone you steer by swiping on the maze or with the on-screen pad. Top 5 scores
+are kept in that browser.
 
 ## Difficulty
 
@@ -52,6 +66,9 @@ Each difficulty keeps its own top 5 high score table. Press H on the menu to see
 - Eating a power pellet makes the ghosts scared for 8 seconds (they flash when it's about to wear off). Eating ghosts in a row scores 200, 400, 800, 1600.
 - Each ghost behaves differently: Blinky (red) chases you directly, Pinky (pink) aims ahead of you, Inky (blue) flanks using Blinky's position, and Clyde (orange) backs off when he gets close. Ghosts alternate between chasing and scattering to their corners.
 - The side tunnels wrap around the board.
+- Eaten ghosts turn into eyes that race back to their start and come back to life there.
+- Scoring 10,000 points gives you one extra life.
+- While the ghosts are frightened, a bar along the top shows how much power-up time is left; it flashes when it's about to run out.
 - Clear all pellets to advance a level; ghosts get faster each level. There are four mazes (Classic, Arena, Tunnels, Cross), each with its own wall colour, and the game cycles through them. You have 3 lives.
 - Retro sound effects are generated in code (no audio files needed).
 - If your score makes the top 5, you type your name at game over. Scores are saved per difficulty in `~/.pacman_scores_<difficulty>`, so they're kept between games.
