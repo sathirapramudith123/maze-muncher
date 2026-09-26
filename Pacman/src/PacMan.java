@@ -167,6 +167,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private final int boardWidth = columnCount * tileSize;
     private final int boardHeight = rowCount * tileSize;
     private final int hudHeight = tileSize;
+    /** strip above the maze where the power-up countdown appears */
+    private final int powerBarHeight = tileSize;
 
     private static final int FRAME_MS = 25;
     private static final int PAC_SPEED = 4; // must divide tileSize
@@ -225,7 +227,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private int level = 1;
 
     PacMan() {
-        setPreferredSize(new Dimension(boardWidth, boardHeight + hudHeight));
+        setPreferredSize(new Dimension(boardWidth, powerBarHeight + boardHeight + hudHeight));
         setBackground(Color.BLACK);
         addKeyListener(this);
         setFocusable(true);
@@ -653,6 +655,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        if (scaredTimer > 0 && (state == State.PLAYING || paused)) {
+            drawScaredTimerBar(g2);
+        }
+        // everything else is drawn below the power-up strip
+        g2.translate(0, powerBarHeight);
         draw(g2);
     }
 
@@ -681,9 +688,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             fruitKind.draw(g, fruit.x, fruit.y, tileSize, cherryImage);
         }
 
-        if (scaredTimer > 0 && (state == State.PLAYING || paused)) {
-            drawScaredTimerBar(g);
-        }
 
         boolean gameEnded = state == State.GAME_OVER || state == State.NAME_ENTRY;
         if (state != State.LEVEL_CLEAR && state != State.DYING && !gameEnded) {
@@ -747,12 +751,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    /** Labelled bar across the top wall counting down how long the ghosts stay frightened. */
+    /** Labelled bar in the strip above the maze counting down how long the ghosts stay frightened. */
     private void drawScaredTimerBar(Graphics2D g) {
-        int trackX = tileSize;
-        int trackW = boardWidth - tileSize * 2;
+        int trackX = 8;
+        int trackW = boardWidth - 16;
         int y = 4;
-        int h = tileSize - 8;
+        int h = powerBarHeight - 8;
         boolean ending = scaredTimer < SCARED_WARNING_FRAMES;
         boolean flash = ending && (frame / 5) % 2 == 0;
         Color fill = !ending ? new Color(0x3355FF) : flash ? new Color(0xFF3B30) : new Color(0xFFD52E);

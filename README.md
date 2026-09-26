@@ -114,7 +114,7 @@ The workflow in `.github/workflows/pages.yml` publishes the `web` folder to GitH
 
 Eat every pellet in the maze to clear the level, and don't let a ghost catch you.
 Eat a **power pellet** (the big white dots in the corners) and the ghosts turn blue and run away.
-That's your chance to eat them, but only for a few seconds: the **POWER** bar at the top of the maze counts down
+That's your chance to eat them, but only for a few seconds: the **POWER** bar just above the maze counts down
 how long you have left, and flashes yellow and red just before the ghosts turn dangerous again.
 
 ### Scoring
