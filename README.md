@@ -20,12 +20,15 @@ java App
 | --- | --- |
 | Arrow keys / WASD | Move (turns are buffered, so press just before a corner) |
 | P / Esc | Pause |
+| M | Sound on/off |
 | Enter / Space | Restart after game over |
 
 ## Gameplay
 
-- Pellets are worth 10, power pellets 50. A cherry appears twice per level for bonus points.
+- Pellets are worth 10, power pellets 50. A bonus fruit appears twice per level; points you earn float up where you earned them.
 - Eating a power pellet makes the ghosts scared for 8 seconds (they flash when it's about to wear off). Eating ghosts in a row scores 200, 400, 800, 1600.
 - Each ghost behaves differently: Blinky (red) chases you directly, Pinky (pink) aims ahead of you, Inky (blue) flanks using Blinky's position, and Clyde (orange) backs off when he gets close. Ghosts alternate between chasing and scattering to their corners.
 - The side tunnels wrap around the board.
 - Clear all pellets to advance a level; ghosts get faster each level. You have 3 lives.
+- Retro sound effects are generated in code (no audio files needed).
+- Your high score is saved to `~/.pacman_highscore`, so it's kept between games.

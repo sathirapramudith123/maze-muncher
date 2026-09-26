@@ -1,5 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +36,20 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     enum State { READY, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER }
+
+    /** Floating score text shown where points were earned. */
+    static class Popup {
+        final int x, y;
+        final String text;
+        int timer;
+
+        Popup(int x, int y, String text, int timer) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.timer = timer;
+        }
+    }
 
     class Entity {
         int x, y;
@@ -140,11 +159,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private static final int DYING_FRAMES = 1500 / FRAME_MS;
     private static final int LEVEL_CLEAR_FRAMES = 2000 / FRAME_MS;
     private static final int CHERRY_FRAMES = 10000 / FRAME_MS;
+    private static final int POPUP_FRAMES = 1000 / FRAME_MS;
+    private static final Path HIGH_SCORE_FILE = Paths.get(System.getProperty("user.home"), ".pacman_highscore");
 
     private Image wallImage;
     private Image blueGhostImage, orangeGhostImage, pinkGhostImage, redGhostImage, scaredGhostImage;
     private Image pacmanUpImage, pacmanDownImage, pacmanLeftImage, pacmanRightImage;
-    private Image powerFoodImage, cherryImage;
+    private Image powerFoodImage, cherryImage, cherry2Image;
 
     private boolean[][] walls;
     private boolean[][] food;
@@ -156,6 +177,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private final List<Ghost> ghosts = new ArrayList<>();
     private Entity cherry;
     private int cherryTimer = 0;
+    private final List<Popup> popups = new ArrayList<>();
+    private final Sound sound = new Sound();
 
     private final Timer gameLoop;
     private final Random random = new Random();
@@ -172,6 +195,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private int score = 0;
     private int highScore = 0;
+    private int savedHighScore = 0;
     private int lives = 3;
     private int level = 1;
 
@@ -193,8 +217,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pacmanRightImage = loadImage("pacmanRight.png");
         powerFoodImage = loadImage("powerFood.png");
         cherryImage = loadImage("cherry.png");
+        cherry2Image = loadImage("cherry2.png");
 
+        highScore = savedHighScore = loadHighScore();
         loadMap();
+        sound.start();
 
         gameLoop = new Timer(FRAME_MS, this);
         gameLoop.start();
@@ -209,6 +236,24 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         return new ImageIcon(url).getImage();
     }
 
+    private int loadHighScore() {
+        try {
+            return Integer.parseInt(new String(Files.readAllBytes(HIGH_SCORE_FILE), StandardCharsets.UTF_8).trim());
+        } catch (IOException | NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private void saveHighScore() {
+        if (highScore <= savedHighScore) return;
+        try {
+            Files.write(HIGH_SCORE_FILE, String.valueOf(highScore).getBytes(StandardCharsets.UTF_8));
+            savedHighScore = highScore;
+        } catch (IOException e) {
+            // not fatal: the high score just won't survive a restart
+        }
+    }
+
     private void loadMap() {
         walls = new boolean[rowCount][columnCount];
         food = new boolean[rowCount][columnCount];
@@ -218,6 +263,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         ghosts.clear();
         cherry = null;
         cherryTimer = 0;
+        popups.clear();
 
         for (int r = 0; r < rowCount; r++) {
             for (int c = 0; c < columnCount; c++) {
@@ -263,6 +309,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         loadMap();
         resetPositions();
         state = State.READY;
+        sound.start();
     }
 
     // ---------------------------------------------------------------- update
@@ -277,6 +324,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private void update() {
         frame++;
+        popups.removeIf(p -> --p.timer <= 0);
         switch (state) {
             case PLAYING:
                 updatePlaying();
@@ -315,6 +363,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (foodRemaining == 0) {
             state = State.LEVEL_CLEAR;
             stateTimer = LEVEL_CLEAR_FRAMES;
+            saveHighScore();
+            sound.levelClear();
         }
     }
 
@@ -366,6 +416,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (food[row][col]) {
             food[row][col] = false;
             score += 10;
+            sound.waka();
             onFoodEaten();
         } else if (powerFood[row][col]) {
             powerFood[row][col] = false;
@@ -374,8 +425,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             frightenGhosts();
         }
         if (cherry != null && cherry.col() == col && cherry.row() == row) {
-            score += 100 * level;
+            int points = 100 * level;
+            score += points;
+            popups.add(new Popup(cherry.x, cherry.y, String.valueOf(points), POPUP_FRAMES));
             cherry = null;
+            sound.fruit();
         }
         highScore = Math.max(highScore, score);
     }
@@ -384,7 +438,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         foodRemaining--;
         foodEaten++;
         if (foodEaten == 70 || foodEaten == 140) {
-            cherry = new Entity(cherryImage, 9 * tileSize, 11 * tileSize);
+            cherry = new Entity(level % 2 == 1 ? cherryImage : cherry2Image, 9 * tileSize, 11 * tileSize);
             cherryTimer = CHERRY_FRAMES;
         }
     }
@@ -398,6 +452,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void frightenGhosts() {
         scaredTimer = SCARED_FRAMES;
         ghostCombo = 0;
+        sound.powerUp();
         for (Ghost ghost : ghosts) {
             ghost.scared = true;
             ghost.direction = ghost.direction.opposite();
@@ -495,14 +550,19 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
             if (ghost.scared) {
                 ghostCombo++;
-                score += 100 * (1 << ghostCombo); // 200, 400, 800, 1600
+                int points = 100 * (1 << ghostCombo); // 200, 400, 800, 1600
+                score += points;
                 highScore = Math.max(highScore, score);
+                popups.add(new Popup(ghost.x, ghost.y, String.valueOf(points), POPUP_FRAMES));
+                sound.eatGhost();
                 ghost.reset();
                 ghost.releaseDelay = 1000 / FRAME_MS;
             } else {
                 lives--;
                 state = State.DYING;
                 stateTimer = DYING_FRAMES;
+                saveHighScore();
+                sound.death();
                 return true;
             }
         }
@@ -556,10 +616,18 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             drawEntity(g, pacman, pacman.image);
         }
 
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        g.setColor(Color.CYAN);
+        for (Popup p : popups) {
+            int w = g.getFontMetrics().stringWidth(p.text);
+            int rise = (POPUP_FRAMES - p.timer) / 2;
+            g.drawString(p.text, p.x + (tileSize - w) / 2, p.y + tileSize / 2 - rise);
+        }
+
         drawHud(g);
 
         switch (state) {
-            case READY: drawBanner(g, "READY!", "Press an arrow key / WASD to start", Color.YELLOW); break;
+            case READY: drawBanner(g, "READY!", "Arrow keys / WASD to start  -  M: sound " + (sound.isEnabled() ? "on" : "off"), Color.YELLOW); break;
             case LEVEL_CLEAR: drawBanner(g, "LEVEL " + level + " CLEAR!", null, Color.CYAN); break;
             case GAME_OVER: drawBanner(g, "GAME OVER", "Press Enter to play again", Color.RED); break;
             default: break;
@@ -629,6 +697,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
+        if (key == KeyEvent.VK_M) {
+            sound.toggle();
+            return;
+        }
         if (state == State.GAME_OVER) {
             if (key == KeyEvent.VK_ENTER || key == KeyEvent.VK_SPACE) {
                 newGame();
