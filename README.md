@@ -14,14 +14,26 @@ java App
 
 (Or open the `Pacman` folder in VS Code with the Java extension and run `App`.)
 
+## Difficulty
+
+Choose a difficulty from the start menu (Up/Down or 1/2/3, then Enter):
+
+| Mode | Lives | Ghosts | Power-up time |
+| --- | --- | --- | --- |
+| Easy | 5 | Slow, often wander randomly | 10 s |
+| Medium | 3 | Classic speed and behaviour | 8 s |
+| Hard | 3 | Fast, rarely make mistakes | 5 s |
+
+Each difficulty keeps its own high score.
+
 ## Controls
 
 | Key | Action |
 | --- | --- |
 | Arrow keys / WASD | Move (turns are buffered, so press just before a corner) |
-| P / Esc | Pause |
+| P / Esc | Pause (Q while paused quits to the menu) |
 | M | Sound on/off |
-| Enter / Space | Restart after game over |
+| Enter / Space | Start from the menu / back to the menu after game over |
 
 ## Gameplay
 
@@ -31,4 +43,4 @@ java App
 - The side tunnels wrap around the board.
 - Clear all pellets to advance a level; ghosts get faster each level. You have 3 lives.
 - Retro sound effects are generated in code (no audio files needed).
-- Your high score is saved to `~/.pacman_highscore`, so it's kept between games.
+- High scores are saved per difficulty in `~/.pacman_highscore_<difficulty>`, so it's kept between games.

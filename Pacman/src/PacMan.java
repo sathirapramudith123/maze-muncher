@@ -35,7 +35,38 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    enum State { READY, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER }
+    enum State { MENU, READY, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER }
+
+    enum Difficulty {
+        EASY("EASY", "5 lives, slow ghosts, 10s power-ups", new Color(0x4CD964), 5, 10000, 2, 30),
+        MEDIUM("MEDIUM", "3 lives, classic ghosts, 8s power-ups", new Color(0xFFB000), 3, 8000, 4, 10),
+        HARD("HARD", "3 lives, fast smart ghosts, 5s power-ups", new Color(0xFF3B30), 3, 5000, 7, 3);
+
+        final String label;
+        final String description;
+        final Color color;
+        final int lives;
+        final int scaredFrames;
+        /** ghosts skip one frame in every (ghostSkipBase + level), so a higher base means faster ghosts */
+        final int ghostSkipBase;
+        /** chance (in percent) that a chasing ghost picks a random turn instead of the smart one */
+        final int randomTurnPercent;
+
+        Difficulty(String label, String description, Color color, int lives, int scaredMs,
+                   int ghostSkipBase, int randomTurnPercent) {
+            this.label = label;
+            this.description = description;
+            this.color = color;
+            this.lives = lives;
+            this.scaredFrames = scaredMs / FRAME_MS;
+            this.ghostSkipBase = ghostSkipBase;
+            this.randomTurnPercent = randomTurnPercent;
+        }
+
+        Path highScoreFile() {
+            return Paths.get(System.getProperty("user.home"), ".pacman_highscore_" + name().toLowerCase());
+        }
+    }
 
     /** Floating score text shown where points were earned. */
     static class Popup {
@@ -152,7 +183,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private static final int FRAME_MS = 25;
     private static final int PAC_SPEED = 4; // must divide tileSize
     private static final int GHOST_SPEED = 4; // must divide tileSize
-    private static final int SCARED_FRAMES = 8000 / FRAME_MS;
     private static final int SCARED_WARNING_FRAMES = 2000 / FRAME_MS;
     private static final int SCATTER_FRAMES = 7000 / FRAME_MS;
     private static final int CHASE_FRAMES = 20000 / FRAME_MS;
@@ -160,7 +190,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private static final int LEVEL_CLEAR_FRAMES = 2000 / FRAME_MS;
     private static final int CHERRY_FRAMES = 10000 / FRAME_MS;
     private static final int POPUP_FRAMES = 1000 / FRAME_MS;
-    private static final Path HIGH_SCORE_FILE = Paths.get(System.getProperty("user.home"), ".pacman_highscore");
 
     private Image wallImage;
     private Image blueGhostImage, orangeGhostImage, pinkGhostImage, redGhostImage, scaredGhostImage;
@@ -183,7 +212,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private final Timer gameLoop;
     private final Random random = new Random();
 
-    private State state = State.READY;
+    private State state = State.MENU;
+    private Difficulty difficulty = Difficulty.MEDIUM;
     private boolean paused = false;
     private Direction queuedDirection = Direction.NONE;
     private long frame = 0;
@@ -196,6 +226,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private int score = 0;
     private int highScore = 0;
     private int savedHighScore = 0;
+    private final int[] bestScores = new int[Difficulty.values().length];
     private int lives = 3;
     private int level = 1;
 
@@ -219,9 +250,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         cherryImage = loadImage("cherry.png");
         cherry2Image = loadImage("cherry2.png");
 
-        highScore = savedHighScore = loadHighScore();
+        for (Difficulty d : Difficulty.values()) {
+            bestScores[d.ordinal()] = loadHighScore(d);
+        }
+        highScore = savedHighScore = bestScores[difficulty.ordinal()];
         loadMap();
-        sound.start();
 
         gameLoop = new Timer(FRAME_MS, this);
         gameLoop.start();
@@ -236,9 +269,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         return new ImageIcon(url).getImage();
     }
 
-    private int loadHighScore() {
+    private int loadHighScore(Difficulty d) {
         try {
-            return Integer.parseInt(new String(Files.readAllBytes(HIGH_SCORE_FILE), StandardCharsets.UTF_8).trim());
+            return Integer.parseInt(new String(Files.readAllBytes(d.highScoreFile()), StandardCharsets.UTF_8).trim());
         } catch (IOException | NumberFormatException e) {
             return 0;
         }
@@ -247,8 +280,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void saveHighScore() {
         if (highScore <= savedHighScore) return;
         try {
-            Files.write(HIGH_SCORE_FILE, String.valueOf(highScore).getBytes(StandardCharsets.UTF_8));
+            Files.write(difficulty.highScoreFile(), String.valueOf(highScore).getBytes(StandardCharsets.UTF_8));
             savedHighScore = highScore;
+            bestScores[difficulty.ordinal()] = highScore;
         } catch (IOException e) {
             // not fatal: the high score just won't survive a restart
         }
@@ -302,9 +336,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         scatterMode = true;
     }
 
-    private void newGame() {
+    private void newGame(Difficulty chosen) {
+        difficulty = chosen;
+        highScore = savedHighScore = bestScores[difficulty.ordinal()];
+        paused = false;
         score = 0;
-        lives = 3;
+        lives = difficulty.lives;
         level = 1;
         loadMap();
         resetPositions();
@@ -450,7 +487,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     private void frightenGhosts() {
-        scaredTimer = SCARED_FRAMES;
+        scaredTimer = difficulty.scaredFrames;
         ghostCombo = 0;
         sound.powerUp();
         for (Ghost ghost : ghosts) {
@@ -469,7 +506,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             // which keeps them aligned to the tile grid.
             boolean moveThisFrame = ghost.scared
                 ? frame % 2 == 0
-                : frame % (4 + level) != 0;
+                : frame % (difficulty.ghostSkipBase + level) != 0;
             if (!moveThisFrame) continue;
 
             if (ghost.atTileCenter()) {
@@ -492,7 +529,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (options.isEmpty()) {
             return ghost.direction.opposite();
         }
-        if (ghost.scared || random.nextInt(10) == 0) {
+        if (ghost.scared || random.nextInt(100) < difficulty.randomTurnPercent) {
             return options.get(random.nextInt(options.size()));
         }
 
@@ -624,16 +661,19 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.drawString(p.text, p.x + (tileSize - w) / 2, p.y + tileSize / 2 - rise);
         }
 
-        drawHud(g);
+        if (state != State.MENU) {
+            drawHud(g);
+        }
 
         switch (state) {
+            case MENU: drawMenu(g); break;
             case READY: drawBanner(g, "READY!", "Arrow keys / WASD to start  -  M: sound " + (sound.isEnabled() ? "on" : "off"), Color.YELLOW); break;
             case LEVEL_CLEAR: drawBanner(g, "LEVEL " + level + " CLEAR!", null, Color.CYAN); break;
-            case GAME_OVER: drawBanner(g, "GAME OVER", "Press Enter to play again", Color.RED); break;
+            case GAME_OVER: drawBanner(g, "GAME OVER", "Press Enter to choose a difficulty", Color.RED); break;
             default: break;
         }
         if (paused) {
-            drawBanner(g, "PAUSED", "Press P to resume", Color.WHITE);
+            drawBanner(g, "PAUSED", "P: resume  -  Q: quit to menu", Color.WHITE);
         }
     }
 
@@ -660,11 +700,69 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
         g.drawString("LV " + level, boardWidth / 2 + 50, y + 22);
 
+        if (state != State.MENU) {
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.setColor(difficulty.color);
+            g.drawString(difficulty.label, boardWidth / 2 + 96, y + 21);
+        }
+
         int iconSize = tileSize * 2 / 3;
         for (int i = 0; i < lives; i++) {
             int x = boardWidth - (i + 1) * (iconSize + 4) - 4;
             g.drawImage(pacmanRightImage, x, y + (hudHeight - iconSize) / 2, iconSize, iconSize, null);
         }
+    }
+
+    private void drawMenu(Graphics2D g) {
+        g.setColor(new Color(0, 0, 0, 215));
+        g.fillRect(0, 0, boardWidth, boardHeight);
+
+        g.setFont(new Font("Arial", Font.BOLD, 56));
+        FontMetrics fm = g.getFontMetrics();
+        g.setColor(Color.YELLOW);
+        String title = "PAC-MAN";
+        g.drawString(title, (boardWidth - fm.stringWidth(title)) / 2, 130);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        fm = g.getFontMetrics();
+        g.setColor(Color.WHITE);
+        String prompt = "Select difficulty";
+        g.drawString(prompt, (boardWidth - fm.stringWidth(prompt)) / 2, 190);
+
+        Difficulty[] options = Difficulty.values();
+        for (int i = 0; i < options.length; i++) {
+            Difficulty d = options[i];
+            int top = 230 + i * 100;
+            boolean selected = d == difficulty;
+
+            if (selected) {
+                g.setColor(new Color(d.color.getRed(), d.color.getGreen(), d.color.getBlue(), 50));
+                g.fillRoundRect(80, top, boardWidth - 160, 80, 16, 16);
+                g.setColor(d.color);
+                g.setStroke(new BasicStroke(3));
+                g.drawRoundRect(80, top, boardWidth - 160, 80, 16, 16);
+                g.setStroke(new BasicStroke(1));
+                g.drawImage(pacmanRightImage, 96, top + 24, tileSize, tileSize, null);
+            }
+
+            g.setFont(new Font("Arial", Font.BOLD, 26));
+            g.setColor(selected ? d.color : Color.GRAY);
+            g.drawString((i + 1) + ". " + d.label, 144, top + 34);
+
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+            g.setColor(selected ? Color.WHITE : Color.GRAY);
+            g.drawString(d.description, 144, top + 58);
+
+            String best = "HI " + bestScores[d.ordinal()];
+            fm = g.getFontMetrics();
+            g.drawString(best, boardWidth - 96 - fm.stringWidth(best), top + 34);
+        }
+
+        g.setFont(new Font("Arial", Font.PLAIN, 15));
+        fm = g.getFontMetrics();
+        g.setColor(Color.LIGHT_GRAY);
+        String help = "Up/Down or 1/2/3 to choose  -  Enter to start  -  M: sound " + (sound.isEnabled() ? "on" : "off");
+        g.drawString(help, (boardWidth - fm.stringWidth(help)) / 2, 580);
     }
 
     private void drawBanner(Graphics2D g, String title, String subtitle, Color color) {
@@ -701,10 +799,24 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             sound.toggle();
             return;
         }
+        if (state == State.MENU) {
+            handleMenuKey(key);
+            return;
+        }
         if (state == State.GAME_OVER) {
             if (key == KeyEvent.VK_ENTER || key == KeyEvent.VK_SPACE) {
-                newGame();
+                state = State.MENU;
             }
+            return;
+        }
+        if (paused && key == KeyEvent.VK_Q) {
+            paused = false;
+            saveHighScore();
+            state = State.MENU;
+            return;
+        }
+        if (state == State.READY && key == KeyEvent.VK_ESCAPE) {
+            state = State.MENU;
             return;
         }
         if (key == KeyEvent.VK_P || key == KeyEvent.VK_ESCAPE) {
@@ -717,6 +829,23 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         queuedDirection = d;
         if (state == State.READY) {
             state = State.PLAYING;
+        }
+    }
+
+    private void handleMenuKey(int key) {
+        Difficulty[] options = Difficulty.values();
+        switch (key) {
+            case KeyEvent.VK_UP: case KeyEvent.VK_W:
+                difficulty = options[Math.floorMod(difficulty.ordinal() - 1, options.length)];
+                break;
+            case KeyEvent.VK_DOWN: case KeyEvent.VK_S:
+                difficulty = options[(difficulty.ordinal() + 1) % options.length];
+                break;
+            case KeyEvent.VK_1: case KeyEvent.VK_NUMPAD1: newGame(Difficulty.EASY); break;
+            case KeyEvent.VK_2: case KeyEvent.VK_NUMPAD2: newGame(Difficulty.MEDIUM); break;
+            case KeyEvent.VK_3: case KeyEvent.VK_NUMPAD3: newGame(Difficulty.HARD); break;
+            case KeyEvent.VK_ENTER: case KeyEvent.VK_SPACE: newGame(difficulty); break;
+            default: break;
         }
     }
 
