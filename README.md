@@ -36,7 +36,7 @@
 - [How to play](#how-to-play)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
-- [Browser extras](#browser-extras)
+- [Extras](#extras)
 - [Make your own maze](#make-your-own-maze)
 - [සිංහලෙන්](#සිංහලෙන්)
 
@@ -57,10 +57,10 @@
 | ⏱️ **Power-up timer** | A labelled bar counts down the seconds the ghosts stay frightened, and flashes yellow and red before it ends |
 | 🔊 **Retro sound** | Every sound effect is generated in code, so there are no audio files |
 | 🌐 **Browser version** | Same game in a single HTML file, with swipe and d-pad controls for phones |
-| 🏅 **Achievements** *(browser)* | Twelve badges to unlock, from *Ghost Hunter* to *Architect* |
-| ✏️ **Maze editor** *(browser)* | Draw your own maze, check it, save it and play it |
+| 🏅 **Achievements** | Twelve badges to unlock, from *Ghost Hunter* to *Architect* |
+| ✏️ **Maze editor** | Draw your own maze, check it, save it and play it |
+| ❓ **How to play** | A short guide with the ghosts' personalities, shown the first time you play |
 | 📳 **Vibration** *(browser, phones)* | The phone buzzes when you eat a power pellet or a ghost, and when you die |
-| ❓ **How to play** *(browser)* | A short guide with the ghosts' personalities, shown on your first visit |
 
 ---
 
@@ -108,6 +108,8 @@ The workflow in `.github/workflows/pages.yml` publishes the `web` folder to GitH
 | **1 / 2 / 3** | Start on Easy / Medium / Hard from the menu |
 | **Enter** | Start the selected difficulty, or go back to the menu after game over |
 | **H** | Show the top 5 high scores (from the menu) |
+| **I** / **A** / **E** | How to play / achievements / maze editor (Java menu) |
+| **C** | Play the maze you built (Java menu) |
 | **P** or **Esc** | Pause / resume |
 | **Q** (while paused) | Quit to the menu |
 | **M** | Sound on / off |
@@ -181,19 +183,27 @@ If your final score makes the top 5 for your difficulty, you're asked for your n
 
 ---
 
-## Browser extras
+## Extras
 
-These are in the browser version only (`web/index.html` and the GitHub Pages site).
+How to play, achievements and the maze editor are in both the Java game and the browser game.
+Vibration is browser-only, since computers can't vibrate.
+
+| | Java game | Browser game |
+| --- | --- | --- |
+| How to play | Key **I** on the menu | **HOW TO PLAY** button |
+| Achievements | Key **A** on the menu | **ACHIEVEMENTS** button |
+| Maze editor | Key **E** on the menu | **MAZE EDITOR** button |
+| Play your maze | Key **C** on the menu | **PLAY MY MAZE** button |
+| Saved in | Your home folder (`.pacman_achievements`, `.pacman_custom_maze`) | That browser |
 
 ### How to play
 
-A short guide opens the first time someone visits, covering the rules, scoring, the four ghosts and
-the controls. It's always available from **HOW TO PLAY** on the menu.
+A short guide opens the first time you play, covering the rules, scoring, the four ghosts and the
+controls.
 
 ### Achievements
 
-Open **ACHIEVEMENTS** on the menu to see which ones you've unlocked. A banner pops up the moment
-you earn one.
+A banner pops up the moment you earn one, and the achievements screen shows all twelve.
 
 | Achievement | How to unlock it |
 | --- | --- |
@@ -212,16 +222,21 @@ you earn one.
 
 ### Maze editor
 
-Open **MAZE EDITOR** on the menu. It starts from your saved maze, or from the Classic maze.
+The editor starts from your saved maze, or from the Classic maze.
 
 1. Pick a tool: **Wall**, **Pellet**, **Power** pellet, **Empty** floor, **Pac-Man**, **Ghosts** or **Fruit** spot.
-2. Tap or drag on the maze to draw. With **Mirror** on, whatever you draw on one side is copied to the other.
-3. Press **SAVE & PLAY**. The editor checks the maze first: Pac-Man and the ghosts must be placed,
-   every pellet must be reachable (unreachable ones are outlined in red), and a tunnel needs an
-   opening on both edges of its row.
+   In the Java game, click a tool above the maze or press **1**–**7**.
+2. Click (or tap) and drag on the maze to draw. With **Mirror** on, whatever you draw on one side is
+   copied to the other (key **R** in Java).
+3. Save and play: **SAVE & PLAY** in the browser, **P** in Java (**S** just saves). The editor checks
+   the maze first: Pac-Man and the ghosts must be placed, every pellet must be reachable
+   (unreachable ones are outlined in red), and a tunnel needs an opening on both edges of its row.
 
-Your maze is saved in the browser. Play it again any time with **PLAY MY MAZE** on the menu, at the
-difficulty you have selected. Games on your own maze don't go on the top 5 high scores.
+Other editor keys in Java: **C** starts again from the Classic maze, **X** twice clears it, **Esc** goes
+back to the menu.
+
+You play your maze at the difficulty you have selected. Games on your own maze don't go on the top 5
+high scores.
 
 ### Vibration
 

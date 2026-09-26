@@ -53,6 +53,10 @@ public class Sound {
         play(concat(tone(1047, 70), tone(1319, 70), tone(1568, 70), tone(2093, 160)));
     }
 
+    public void achievement() {
+        play(concat(tone(784, 80), tone(988, 80), tone(1319, 180)));
+    }
+
     public void levelClear() {
         play(concat(tone(523, 110), tone(659, 110), tone(784, 110), tone(1047, 250)));
     }
