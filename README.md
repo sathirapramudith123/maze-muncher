@@ -4,6 +4,8 @@
 
 **A complete Pac-Man arcade game written in Java Swing, plus a browser version you can play on a phone.**
 
+### [▶ Play it in your browser](https://sathirapramudith123.github.io/pacman/)
+
 ![Java](https://img.shields.io/badge/Java-11%2B-orange?logo=openjdk&logoColor=white)
 ![Swing](https://img.shields.io/badge/UI-Swing-blue)
 ![HTML5](https://img.shields.io/badge/Browser-HTML5%20Canvas-e34f26?logo=html5&logoColor=white)
@@ -79,9 +81,17 @@ java App
 
 ### Browser (no Java needed)
 
-Open **`web/index.html`** in any modern browser, either by double-clicking it or by hosting the
-`web` folder (for example with GitHub Pages). It plays the same as the Java version. On a phone you
-steer by swiping on the maze or with the on-screen pad.
+**Play online:** https://sathirapramudith123.github.io/pacman/
+
+Or open **`web/index.html`** from your copy of the repo in any modern browser. It plays the same as
+the Java version. On a phone you steer by swiping on the maze or with the on-screen pad.
+
+### Hosting on GitHub Pages
+
+The workflow in `.github/workflows/pages.yml` publishes the `web` folder to GitHub Pages every time
+`web/` changes on `main`. To turn it on once: open the repo's **Settings → Pages**, and under
+**Build and deployment → Source** choose **GitHub Actions**. To publish right away, open the
+**Actions** tab, pick **Deploy game to GitHub Pages** and click **Run workflow**.
 
 ---
 
@@ -180,6 +190,8 @@ pacman/
 │       └── *.png             # Sprites for walls, ghosts, power pellets and the cherry
 ├── web/
 │   └── index.html            # Browser version (one self-contained file)
+├── .github/workflows/
+│   └── pages.yml             # Publishes web/ to GitHub Pages
 ├── docs/screenshots/         # Images used in this README
 ├── run.bat                   # Windows launcher (double-click)
 ├── run.sh                    # macOS / Linux launcher
