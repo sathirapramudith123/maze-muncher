@@ -332,12 +332,48 @@ with or endorsed by Bandai Namco, and does not use PAC-MAN names, characters, ar
 
 ## සිංහලෙන්
 
-**Java ක්‍රීඩාව (Windows):**
+**Maze Muncher** කියන්නේ maze එකක ghosts ලාගෙන් බේරිලා pellets කන arcade ක්‍රීඩාවක්. Computer එකේ Java වලින් හරි, ඕනෑම browser එකකින් හරි play කරන්න පුළුවන්.
+
+### 🎮 Play කරන හැටි
+
+**🌐 Online (ලේසිම ක්‍රමය):** https://sathirapramudith123.github.io/maze-muncher/
+Phone එකෙන් හරි computer එකෙන් හරි open කරන්න. Install කරන්න දෙයක් නැහැ.
+
+**🖥️ Java ක්‍රීඩාව (Windows):**
 1. [adoptium.net](https://adoptium.net) වෙතින් Java JDK install කරන්න.
 2. Project folder එකේ තියෙන **`run.bat`** double-click කරන්න.
 
-**Browser ක්‍රීඩාව:** **`web/index.html`** double-click කරන්න. Java ඕනේ නැහැ. Phone එකේ maze එක උඩ swipe කරන්න, නැත්නම් ⬆⬇⬅➡ බොත්තම් ඔබන්න.
+**📄 Internet නැතුව browser එකෙන්:** **`web/index.html`** double-click කරන්න.
 
-**Keys:** ඊතල (arrow) keys හෝ WASD = යන්න · P = pause · M = sound · H = Top 5 scores
+### ⌨️ Keys
 
-**ඉලක්කය:** හැම pellet එකක්ම කාලා level එක ඉවර කරන්න. ලොකු සුදු තිතක් (power pellet) කෑවම ghosts ලා නිල් පාට වෙනවා. එතකොට ඔවුන්වත් කන්න පුළුවන්! 👻
+| Key | කරන දේ |
+| --- | --- |
+| ඊතල (arrow) keys / **W A S D** | යන්න |
+| **P** / **Esc** | Pause (pause කරලා **Q** = menu එකට) |
+| **M** | Sound on / off |
+| **1 / 2 / 3** | Easy / Medium / Hard පටන් ගන්න |
+| **H** | Top 5 high scores |
+| **I** | How to play (Java; website එකේ **HOW TO PLAY** බොත්තම) |
+| **A** | Achievements (Java; website එකේ **ACHIEVEMENTS** බොත්තම) |
+| **E** | Maze editor (Java; website එකේ **MAZE EDITOR** බොත්තම) |
+| **C** | ඔබ හදපු maze එක play කරන්න (Java; website එකේ **PLAY MY MAZE** බොත්තම) |
+
+**📱 Phone එකේ:** Maze එක උඩ swipe කරන්න, නැත්නම් යටින් තියෙන ⬆⬇⬅➡ බොත්තම් ඔබන්න. Menu එකේ බොත්තම් tap කරන්න.
+
+### 🎯 ඉලක්කය
+
+- හැම pellet එකක්ම කාලා level එක ඉවර කරන්න. Ghost කෙනෙක් ඇල්ලුවොත් life එකක් නැති වෙනවා.
+- ලොකු සුදු තිතක් (**power pellet**) කෑවම ghosts ලා නිල් පාට වෙනවා. එතකොට ඔවුන්වත් කන්න පුළුවන්! 👻 ඉතුරු කාලය maze එකට උඩින් තියෙන **POWER** bar එකේ පේනවා.
+- ලකුණු **10,000** දී extra life එකක් ලැබෙනවා.
+
+### 🗺️ Mazes 8ක්
+
+Level 1–8 දක්වා හැම level එකකටම වෙනම maze එකක්: Classic, Arena, Tunnels, Cross, Spiral, Islands, Fortress (power pellets 2යි!), Zigzag. Level 9 ඉඳන් ඒ 8න් එකක් අහඹු විදියට එනවා.
+
+### 🏆 තවත් දේවල්
+
+- **Achievements 12ක්:** Ghost Hunter, Clean Sweep, Untouchable වගේ badges එකතු කරන්න.
+- **Maze editor:** ඔබේම maze එකක් අඳිලා, save කරලා play කරන්න. හැම pellet එකකටම යන්න පුළුවන්ද කියලා ක්‍රීඩාවම පරීක්ෂා කරනවා.
+- **Easy / Medium / Hard:** හැම එකකටම වෙනම Top 5 scoreboard එකක්.
+- **Vibration:** Android phones වල ghost කෙනෙක් කනකොට, මැරෙනකොට phone එක vibrate වෙනවා.
