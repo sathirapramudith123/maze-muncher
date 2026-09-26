@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🟡 Pac-Man
+# 🟡 Maze Muncher
 
-**A complete Pac-Man arcade game written in Java Swing, plus a browser version you can play on a phone.**
+**A maze-chase arcade game written in Java Swing, plus a browser version you can play on a phone.**
 
 ### [▶ Play it in your browser](https://sathirapramudith123.github.io/pacman/)
 
@@ -38,6 +38,7 @@
 - [How it works](#how-it-works)
 - [Extras](#extras)
 - [Make your own maze](#make-your-own-maze)
+- [About the name](#about-the-name)
 - [සිංහලෙන්](#සිංහලෙන්)
 
 ---
@@ -161,10 +162,10 @@ Ghosts also get a little faster every level.
 
 | Ghost | Colour | How it hunts you |
 | --- | --- | --- |
-| **Blinky** | 🔴 Red | Chases you directly |
-| **Pinky** | 🩷 Pink | Aims four tiles ahead of where you're going, to cut you off |
-| **Inky** | 🩵 Cyan | Flanks you, using Blinky's position to trap you between them |
-| **Clyde** | 🟠 Orange | Chases you from afar, but backs off to his corner when he gets close |
+| **Blaze** | 🔴 Red | Chases you directly |
+| **Petal** | 🩷 Pink | Aims four tiles ahead of where you're going, to cut you off |
+| **Frost** | 🩵 Cyan | Flanks you, using Blaze's position to trap you between them |
+| **Sunny** | 🟠 Orange | Chases you from afar, but backs off to its corner when it gets close |
 
 Every so often all four stop chasing and **scatter** to their own corners for a few seconds.
 That's a good moment to clear a crowded area.
@@ -224,12 +225,12 @@ A banner pops up the moment you earn one, and the achievements screen shows all 
 
 The editor starts from your saved maze, or from the Classic maze.
 
-1. Pick a tool: **Wall**, **Pellet**, **Power** pellet, **Empty** floor, **Pac-Man**, **Ghosts** or **Fruit** spot.
+1. Pick a tool: **Wall**, **Pellet**, **Power** pellet, **Empty** floor, **Muncher**, **Ghosts** or **Fruit** spot.
    In the Java game, click a tool above the maze or press **1**–**7**.
 2. Click (or tap) and drag on the maze to draw. With **Mirror** on, whatever you draw on one side is
    copied to the other (key **R** in Java).
 3. Save and play: **SAVE & PLAY** in the browser, **P** in Java (**S** just saves). The editor checks
-   the maze first: Pac-Man and the ghosts must be placed, every pellet must be reachable
+   the maze first: the Muncher and the ghosts must be placed, every pellet must be reachable
    (unreachable ones are outlined in red), and a tunnel needs an opening on both edges of its row.
 
 Other editor keys in Java: **C** starts again from the Classic maze, **X** twice clears it, **Esc** goes
@@ -260,7 +261,7 @@ pacman/
 │       ├── Achievements.java # The twelve badges and the unlock banner
 │       ├── MazeEditor.java   # Draw, check and save your own maze
 │       ├── Sound.java        # Synthesized retro sound effects
-│       └── *.png             # Sprites for walls, ghosts, power pellets and the cherry
+│       └── *.png             # Images for the walls, power pellets and the cherry (everything else is drawn in code)
 ├── web/
 │   └── index.html            # Browser version (one self-contained file)
 ├── .github/workflows/
@@ -276,7 +277,7 @@ pacman/
 ## How it works
 
 - **Game loop.** A Swing `Timer` ticks every 25 ms (40 updates a second). Each tick moves everything one step and repaints.
-- **Grid movement.** Pac-Man and the ghosts move 4 pixels per step on a 32-pixel grid, so they always pass exactly through the centre of each tile. Turns are only decided at tile centres, which keeps movement clean and makes buffered turns possible.
+- **Grid movement.** The Muncher and the ghosts move 4 pixels per step on a 32-pixel grid, so they always pass exactly through the centre of each tile. Turns are only decided at tile centres, which keeps movement clean and makes buffered turns possible.
 - **Ghost speed.** Ghosts always step the same distance, and are slowed down by skipping some frames. Difficulty and level control how many frames they skip.
 - **Ghost AI.** At every junction a ghost picks the turn that brings it closest to its target tile. Each ghost picks its target differently (see [Meet the ghosts](#meet-the-ghosts)). Frightened ghosts turn randomly.
 - **Eyes going home.** When a maze loads, a breadth-first search from each ghost's home tile records the distance from every tile. The eyes just follow those distances downhill, so they always take the shortest way back, tunnels included.
@@ -295,7 +296,7 @@ Mazes are plain text in `Pacman/src/Mazes.java`: 21 rows of 19 characters each.
 | *(space)* | Pellet |
 | `*` | Power pellet |
 | `O` | Empty floor (no pellet) |
-| `P` | Pac-Man's start |
+| `P` | The Muncher's start |
 | `F` | Pellet, and the spot where the bonus fruit appears |
 | `r` `p` `b` `o` | Start of the red, pink, blue and orange ghost |
 
@@ -306,6 +307,13 @@ Rules for a maze that plays well:
 - A tunnel needs an opening on **both** the left and right edge of the same row.
 
 The browser version keeps its own copy of the mazes (the `MAZES` list in `web/index.html`), so copy any new maze there too.
+
+---
+
+## About the name
+
+Maze Muncher is an original game inspired by classic maze-chase arcade games. It is not affiliated
+with or endorsed by Bandai Namco, and does not use PAC-MAN names, characters, artwork or music.
 
 ---
 

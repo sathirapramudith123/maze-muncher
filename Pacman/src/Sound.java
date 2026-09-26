@@ -62,8 +62,8 @@ public class Sound {
     }
 
     public void start() {
-        play(concat(tone(494, 120), tone(988, 120), tone(740, 120), tone(622, 120),
-                    tone(988, 90), tone(740, 180), tone(622, 240)));
+        play(concat(tone(392, 100), tone(523, 100), tone(659, 100), tone(523, 100),
+                    tone(784, 140), tone(659, 100), tone(784, 100), tone(1047, 260)));
     }
 
     private void play(byte[] samples) {

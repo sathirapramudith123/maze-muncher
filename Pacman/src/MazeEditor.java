@@ -17,7 +17,7 @@ final class MazeEditor {
     static final Color WALL = new Color(0x19C3B0);
     private static final Color LOCKED_WALL = new Color(0x0F6E64);
     static final char[] TOOLS = {'X', ' ', '*', 'O', 'P', 'G', 'F'};
-    static final String[] TOOL_NAMES = {"WALL", "PELLET", "POWER", "EMPTY", "PAC", "GHOSTS", "FRUIT"};
+    static final String[] TOOL_NAMES = {"WALL", "PELLET", "POWER", "EMPTY", "MUNCH", "GHOSTS", "FRUIT"};
     private static final String UNIQUE = "PGF"; // tools that place a single marker
 
     private final int rows;
@@ -117,7 +117,7 @@ final class MazeEditor {
             grid = blank();
             bad.clear();
             clearArmedAt = -1;
-            say("Cleared. Draw walls, then place Pac-Man and the ghosts.", false);
+            say("Cleared. Draw walls, then place the Muncher and the ghosts.", false);
         } else {
             clearArmedAt = frame;
             say("Press X again to clear the whole maze.", true);
@@ -145,7 +145,7 @@ final class MazeEditor {
         if (UNIQUE.indexOf(t) >= 0) {
             if (!first) return;
             if (c == 0 || c == cols - 1) {
-                say("Put Pac-Man, the ghosts and the fruit inside the maze, not on its edge.", true);
+                say("Put the Muncher, the ghosts and the fruit inside the maze, not on its edge.", true);
                 return;
             }
             for (char[] row : grid) {
@@ -165,7 +165,7 @@ final class MazeEditor {
     List<String> validate() {
         List<String> errs = new ArrayList<>();
         int pac = count('P'), ghosts = count('G'), pellets = count(' ') + count('*') + count('F');
-        if (pac != 1) errs.add("Place Pac-Man with the PAC tool (key 5).");
+        if (pac != 1) errs.add("Place the Muncher with the MUNCH tool (key 5).");
         if (ghosts != 1) errs.add("Place the ghosts with the GHOSTS tool (key 6).");
         if (pellets == 0) errs.add("Add at least one pellet.");
         for (int r = 0; r < rows; r++) {
@@ -215,9 +215,9 @@ final class MazeEditor {
         }
         if (lost > 0) {
             errs.add(lost + (lost == 1 ? " pellet can't" : " pellets can't")
-                + " be reached from Pac-Man (marked in red). Open a path or remove them.");
+                + " be reached from the Muncher (marked in red). Open a path or remove them.");
         }
-        if (!ghostsOk) errs.add("The ghosts are walled off from Pac-Man.");
+        if (!ghostsOk) errs.add("The ghosts are walled off from the Muncher.");
         return errs;
     }
 

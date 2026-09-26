@@ -1,5 +1,8 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Path2D;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -241,11 +244,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
 
         wallImage = loadImage("wall.png");
-        blueGhostImage = loadImage("blueGhost.png");
-        orangeGhostImage = loadImage("orangeGhost.png");
-        pinkGhostImage = loadImage("pinkGhost.png");
-        redGhostImage = loadImage("redGhost.png");
-        scaredGhostImage = loadImage("scaredGhost.png");
+        redGhostImage = makeGhostImage(new Color(0xFF2D2D), false);
+        pinkGhostImage = makeGhostImage(new Color(0xFFB8FF), false);
+        blueGhostImage = makeGhostImage(new Color(0x29E6FF), false);
+        orangeGhostImage = makeGhostImage(new Color(0xFFB852), false);
+        scaredGhostImage = makeGhostImage(new Color(0x2121DE), true);
         powerFoodImage = loadImage("powerFood.png");
         cherryImage = loadImage("cherry.png");
 
@@ -271,6 +274,50 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
         gameLoop = new Timer(FRAME_MS, this);
         gameLoop.start();
+    }
+
+    /** Draws one of the Maze Muncher ghosts (a one-eyed ghost with an antenna) into a 32x32 image. */
+    private static BufferedImage makeGhostImage(Color body, boolean scared) {
+        BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.scale(2, 2); // draw at double size so it stays smooth when scaled
+        // antenna
+        g.setColor(body.darker());
+        g.setStroke(new BasicStroke(1.6f));
+        g.drawLine(16, 6, 16, 2);
+        g.setColor(body);
+        g.fillOval(14, 0, 4, 4);
+        // body: round top, wavy bottom
+        Path2D.Double shape = new Path2D.Double();
+        shape.moveTo(3, 29);
+        shape.lineTo(3, 17);
+        shape.append(new Arc2D.Double(3, 5, 26, 24, 180, -180, Arc2D.OPEN), true);
+        shape.lineTo(29, 29);
+        double w = 26 / 4.0;
+        for (int i = 0; i < 4; i++) {
+            double xr = 29 - w * i;
+            shape.lineTo(xr - w / 2, 25.5);
+            shape.lineTo(xr - w, 29);
+        }
+        shape.closePath();
+        g.fill(shape);
+        if (scared) {
+            g.setColor(new Color(0xFFD0A8));
+            g.fillRoundRect(12, 12, 8, 4, 3, 3); // squinting eye
+            g.setStroke(new BasicStroke(1.5f));
+            int[] xs = {8, 11, 14, 17, 20, 23};
+            for (int i = 0; i < xs.length - 1; i++) {
+                g.drawLine(xs[i], i % 2 == 0 ? 22 : 19, xs[i + 1], i % 2 == 0 ? 19 : 22);
+            }
+        } else {
+            g.setColor(Color.WHITE);
+            g.fillOval(10, 9, 12, 13);        // one big eye
+            g.setColor(new Color(0x2121DE));
+            g.fillOval(13, 13, 6, 6);
+        }
+        g.dispose();
+        return img;
     }
 
     private Image loadImage(String name) {
@@ -808,13 +855,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         achievements.drawBanner(g, boardWidth);
     }
 
+    /** An eaten ghost's single eye, heading home. */
     private void drawEyes(Graphics2D g, int x, int y, Direction dir) {
-        for (int ex : new int[] {x + 7, x + 17}) {
-            g.setColor(Color.WHITE);
-            g.fillOval(ex, y + 8, 9, 12);
-            g.setColor(new Color(0x2121DE));
-            g.fillOval(ex + 2 + dir.dx * 2, y + 12 + dir.dy * 3, 5, 5);
-        }
+        g.setColor(Color.WHITE);
+        g.fillOval(x + 10, y + 9, 12, 13);
+        g.setColor(new Color(0x2121DE));
+        g.fillOval(x + 13 + dir.dx * 3, y + 13 + dir.dy * 3, 6, 6);
     }
 
     /** Labelled bar in the strip above the maze counting down how long the ghosts stay frightened. */
@@ -870,6 +916,20 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         int inset = size / 16;
         g.setColor(Color.YELLOW);
         g.fillArc(x + inset, y + inset, size - 2 * inset, size - 2 * inset, angle + mouth, 360 - 2 * mouth);
+
+        // the Muncher's eye sits just above (or beside) the mouth, on a 32-pixel grid
+        int ex, ey;
+        switch (dir) {
+            case UP: ex = 7; ey = -2; break;
+            case DOWN: ex = 7; ey = 2; break;
+            case LEFT: ex = -3; ey = -7; break;
+            default: ex = 3; ey = -7; break;
+        }
+        double k = size / 32.0;
+        double r = 2.4 * k;
+        g.setColor(Color.BLACK);
+        g.fillOval((int) Math.round(x + size / 2.0 + ex * k - r), (int) Math.round(y + size / 2.0 + ey * k - r),
+            (int) Math.round(2 * r), (int) Math.round(2 * r));
     }
 
     private void drawEntity(Graphics2D g, Entity e, Image img) {
@@ -925,7 +985,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         g.setFont(new Font("Arial", Font.BOLD, 56));
         FontMetrics fm = g.getFontMetrics();
         g.setColor(Color.YELLOW);
-        String title = "PAC-MAN";
+        String title = "MAZE MUNCHER";
         g.drawString(title, (boardWidth - fm.stringWidth(title)) / 2, 130);
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -1020,10 +1080,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         g.drawString("THE GHOSTS", 36, y + 6);
         y += 20;
         Object[][] ghostsInfo = {
-            {redGhostImage, "BLINKY", "Chases you directly.", new Color(0xFF2D2D)},
-            {pinkGhostImage, "PINKY", "Aims ahead of you to cut you off.", new Color(0xFFB8FF)},
-            {blueGhostImage, "INKY", "Works with Blinky to trap you.", new Color(0x29E6FF)},
-            {orangeGhostImage, "CLYDE", "Chases from afar, backs off when close.", new Color(0xFFB852)},
+            {redGhostImage, "BLAZE", "Chases you directly.", new Color(0xFF2D2D)},
+            {pinkGhostImage, "PETAL", "Aims ahead of you to cut you off.", new Color(0xFFB8FF)},
+            {blueGhostImage, "FROST", "Works with Blaze to trap you.", new Color(0x29E6FF)},
+            {orangeGhostImage, "SUNNY", "Chases from afar, backs off when close.", new Color(0xFFB852)},
         };
         int cardW = (boardWidth - 36 * 2 - 10) / 2;
         for (int i = 0; i < ghostsInfo.length; i++) {
