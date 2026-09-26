@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URL;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import javax.swing.*;
@@ -133,6 +135,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         final int baseReleaseDelay;
         int releaseDelay;
         boolean scared = false;
+        /** eaten by pac man: only the eyes are left, heading back home */
+        boolean eaten = false;
+        /** steps from each tile to this ghost's home tile, used by the eyes to find their way back */
+        int[][] homeDistance;
 
         Ghost(char kind, Image image, int x, int y, int scatterCol, int scatterRow, int releaseDelay) {
             super(image, x, y);
@@ -148,6 +154,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         void reset() {
             super.reset();
             scared = false;
+            eaten = false;
             releaseDelay = baseReleaseDelay;
         }
     }
@@ -171,6 +178,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private static final int LEVEL_CLEAR_FRAMES = 2000 / FRAME_MS;
     private static final int FRUIT_FRAMES = 10000 / FRAME_MS;
     private static final int POPUP_FRAMES = 1000 / FRAME_MS;
+    private static final int EXTRA_LIFE_SCORE = 10000;
+    private static final int EYES_STEPS_PER_FRAME = 2; // eyes travel twice as fast as pac man
 
     private Image wallImage;
     private Image blueGhostImage, orangeGhostImage, pinkGhostImage, redGhostImage, scaredGhostImage;
@@ -211,6 +220,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private final ScoreBoard[] boards = new ScoreBoard[Difficulty.values().length];
     private String playerName = "";
     private int lastRank = -1;
+    private boolean extraLifeAwarded = false;
     private int lives = 3;
     private int level = 1;
 
@@ -283,6 +293,31 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 }
             }
         }
+        for (Ghost ghost : ghosts) {
+            ghost.homeDistance = distancesFrom(ghost.startX / tileSize, ghost.startY / tileSize);
+        }
+    }
+
+    /** Breadth-first search over open tiles (including the side tunnels) from the given tile. */
+    private int[][] distancesFrom(int startCol, int startRow) {
+        int[][] dist = new int[rowCount][columnCount];
+        for (int[] row : dist) {
+            Arrays.fill(row, Integer.MAX_VALUE);
+        }
+        ArrayDeque<int[]> queue = new ArrayDeque<>();
+        dist[startRow][startCol] = 0;
+        queue.add(new int[] {startCol, startRow});
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            for (Direction d : new Direction[] {Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT}) {
+                int c = Math.floorMod(cur[0] + d.dx, columnCount);
+                int r = cur[1] + d.dy;
+                if (isWall(c, r) || dist[r][c] != Integer.MAX_VALUE) continue;
+                dist[r][c] = dist[cur[1]][cur[0]] + 1;
+                queue.add(new int[] {c, r});
+            }
+        }
+        return dist;
     }
 
     private boolean isWall(int col, int row) {
@@ -307,6 +342,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         highScore = board().best();
         paused = false;
         lastRank = -1;
+        extraLifeAwarded = false;
         score = 0;
         lives = difficulty.lives;
         level = 1;
@@ -410,22 +446,32 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void eatAt(int col, int row) {
         if (food[row][col]) {
             food[row][col] = false;
-            score += 10;
+            addScore(10);
             sound.waka();
             onFoodEaten();
         } else if (powerFood[row][col]) {
             powerFood[row][col] = false;
-            score += 50;
+            addScore(50);
             onFoodEaten();
             frightenGhosts();
         }
         if (fruit != null && fruit.col() == col && fruit.row() == row) {
-            score += fruitKind.points;
+            addScore(fruitKind.points);
             popups.add(new Popup(fruit.x, fruit.y, String.valueOf(fruitKind.points), POPUP_FRAMES));
             fruit = null;
             sound.fruit();
         }
+    }
+
+    private void addScore(int points) {
+        score += points;
         highScore = Math.max(highScore, score);
+        if (!extraLifeAwarded && score >= EXTRA_LIFE_SCORE) {
+            extraLifeAwarded = true;
+            lives++;
+            sound.extraLife();
+            popups.add(new Popup(pacman.x, pacman.y - tileSize / 2, "1UP!", POPUP_FRAMES * 2));
+        }
     }
 
     private void onFoodEaten() {
@@ -449,6 +495,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         ghostCombo = 0;
         sound.powerUp();
         for (Ghost ghost : ghosts) {
+            if (ghost.eaten) continue;
             ghost.scared = true;
             ghost.direction = ghost.direction.opposite();
         }
@@ -456,6 +503,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private void moveGhosts() {
         for (Ghost ghost : ghosts) {
+            if (ghost.eaten) {
+                moveEyesHome(ghost);
+                continue;
+            }
             if (ghost.releaseDelay > 0) {
                 ghost.releaseDelay--;
                 continue;
@@ -469,6 +520,36 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
             if (ghost.atTileCenter()) {
                 ghost.direction = chooseGhostDirection(ghost);
+            }
+            ghost.step(GHOST_SPEED);
+        }
+    }
+
+    private void moveEyesHome(Ghost ghost) {
+        for (int i = 0; i < EYES_STEPS_PER_FRAME; i++) {
+            if (ghost.atTileCenter()) {
+                int col = ghost.col();
+                int row = ghost.row();
+                if (ghost.homeDistance[row][col] == 0) {
+                    // home again: come back to life after a short pause
+                    ghost.eaten = false;
+                    ghost.scared = false;
+                    ghost.direction = Direction.NONE;
+                    ghost.releaseDelay = 500 / FRAME_MS;
+                    return;
+                }
+                Direction best = ghost.direction;
+                int bestDist = Integer.MAX_VALUE;
+                for (Direction d : new Direction[] {Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT}) {
+                    int c = Math.floorMod(col + d.dx, columnCount);
+                    int r = row + d.dy;
+                    if (isWall(c, r)) continue;
+                    if (ghost.homeDistance[r][c] < bestDist) {
+                        bestDist = ghost.homeDistance[r][c];
+                        best = d;
+                    }
+                }
+                ghost.direction = best;
             }
             ghost.step(GHOST_SPEED);
         }
@@ -538,6 +619,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     /** @return true if pac man died this frame */
     private boolean checkGhostCollisions() {
         for (Ghost ghost : ghosts) {
+            if (ghost.eaten) continue;
             int dx = Math.abs(ghost.x - pacman.x);
             dx = Math.min(dx, boardWidth - dx);
             int dy = Math.abs(ghost.y - pacman.y);
@@ -546,12 +628,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             if (ghost.scared) {
                 ghostCombo++;
                 int points = 100 * (1 << ghostCombo); // 200, 400, 800, 1600
-                score += points;
-                highScore = Math.max(highScore, score);
+                addScore(points);
                 popups.add(new Popup(ghost.x, ghost.y, String.valueOf(points), POPUP_FRAMES));
                 sound.eatGhost();
-                ghost.reset();
-                ghost.releaseDelay = 1000 / FRAME_MS;
+                ghost.eaten = true;
+                ghost.scared = false;
             } else {
                 lives--;
                 state = State.DYING;
@@ -599,9 +680,20 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             fruitKind.draw(g, fruit.x, fruit.y, tileSize, cherryImage);
         }
 
+        if (scaredTimer > 0 && (state == State.PLAYING || paused)) {
+            drawScaredTimerBar(g);
+        }
+
         boolean gameEnded = state == State.GAME_OVER || state == State.NAME_ENTRY;
         if (state != State.LEVEL_CLEAR && state != State.DYING && !gameEnded) {
             for (Ghost ghost : ghosts) {
+                if (ghost.eaten) {
+                    drawEyes(g, ghost.x, ghost.y, ghost.direction);
+                    if (ghost.x > boardWidth - tileSize) {
+                        drawEyes(g, ghost.x - boardWidth, ghost.y, ghost.direction);
+                    }
+                    continue;
+                }
                 Image img = ghost.normalImage;
                 if (ghost.scared) {
                     boolean warning = scaredTimer < SCARED_WARNING_FRAMES && (frame / 6) % 2 == 0;
@@ -643,6 +735,28 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (paused) {
             drawBanner(g, "PAUSED", "P: resume  -  Q: quit to menu", Color.WHITE);
         }
+    }
+
+    private void drawEyes(Graphics2D g, int x, int y, Direction dir) {
+        for (int ex : new int[] {x + 7, x + 17}) {
+            g.setColor(Color.WHITE);
+            g.fillOval(ex, y + 8, 9, 12);
+            g.setColor(new Color(0x2121DE));
+            g.fillOval(ex + 2 + dir.dx * 2, y + 12 + dir.dy * 3, 5, 5);
+        }
+    }
+
+    /** Bar along the top wall showing how long the ghosts stay frightened. */
+    private void drawScaredTimerBar(Graphics2D g) {
+        int trackX = tileSize * 2;
+        int trackW = boardWidth - tileSize * 4;
+        int y = tileSize / 2 - 5;
+        g.setColor(new Color(0, 0, 0, 200));
+        g.fillRoundRect(trackX - 3, y - 3, trackW + 6, 16, 10, 10);
+        boolean warning = scaredTimer < SCARED_WARNING_FRAMES && (frame / 6) % 2 == 0;
+        g.setColor(warning ? Color.WHITE : new Color(0x3355FF));
+        int w = trackW * scaredTimer / difficulty.scaredFrames;
+        g.fillRoundRect(trackX, y, w, 10, 8, 8);
     }
 
     /** Half-angle of pac man's mouth: chomps while moving, opens up and vanishes when he dies. */
@@ -702,9 +816,19 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
 
         int iconSize = tileSize * 2 / 3;
-        for (int i = 0; i < lives; i++) {
-            int x = boardWidth - (i + 1) * (iconSize + 4) - 4;
-            drawPacman(g, x, y + (hudHeight - iconSize) / 2, iconSize, Direction.RIGHT, 30);
+        if (lives <= 5) {
+            for (int i = 0; i < lives; i++) {
+                int x = boardWidth - (i + 1) * (iconSize + 4) - 4;
+                drawPacman(g, x, y + (hudHeight - iconSize) / 2, iconSize, Direction.RIGHT, 30);
+            }
+        } else {
+            // too many to fit: one icon and a count
+            g.setFont(new Font("Arial", Font.BOLD, 18));
+            g.setColor(Color.WHITE);
+            String count = "x" + lives;
+            int textW = g.getFontMetrics().stringWidth(count);
+            g.drawString(count, boardWidth - textW - 8, y + 22);
+            drawPacman(g, boardWidth - textW - 12 - iconSize, y + (hudHeight - iconSize) / 2, iconSize, Direction.RIGHT, 30);
         }
     }
 
