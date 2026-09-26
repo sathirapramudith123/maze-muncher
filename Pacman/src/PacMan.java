@@ -35,7 +35,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    enum State { MENU, READY, PLAYING, DYING, LEVEL_CLEAR, GAME_OVER }
+    enum State { MENU, SCORES, READY, PLAYING, DYING, LEVEL_CLEAR, NAME_ENTRY, GAME_OVER }
 
     enum Difficulty {
         EASY("EASY", "5 lives, slow ghosts, 10s power-ups", new Color(0x4CD964), 5, 10000, 2, 30),
@@ -63,7 +63,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             this.randomTurnPercent = randomTurnPercent;
         }
 
-        Path highScoreFile() {
+        Path scoresFile() {
+            return Paths.get(System.getProperty("user.home"), ".pacman_scores_" + name().toLowerCase());
+        }
+
+        /** where versions before the top-5 scoreboard kept a single high score */
+        Path legacyHighScoreFile() {
             return Paths.get(System.getProperty("user.home"), ".pacman_highscore_" + name().toLowerCase());
         }
     }
@@ -147,31 +152,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    // X = wall, O = empty (no food), P = pac man, * = power food, ' ' = food
-    // b = blue ghost, o = orange ghost, p = pink ghost, r = red ghost
-    private final String[] tileMap = {
-        "XXXXXXXXXXXXXXXXXXX",
-        "X        X        X",
-        "X XX XXX X XXX XX X",
-        "X*               *X",
-        "X XX X XXXXX X XX X",
-        "X    X       X    X",
-        "XXXX XXXX XXXX XXXX",
-        "OOOX X       X XOOO",
-        "XXXX X XXrXX X XXXX",
-        "O       bpo       O",
-        "XXXX X XXXXX X XXXX",
-        "OOOX X       X XOOO",
-        "XXXX X XXXXX X XXXX",
-        "X        X        X",
-        "X XX XXX X XXX XX X",
-        "X  X     P     X  X",
-        "XX X X XXXXX X X XX",
-        "X    X   X   X    X",
-        "X XXXXXX X XXXXXX X",
-        "X*               *X",
-        "XXXXXXXXXXXXXXXXXXX"
-    };
+    private Mazes.Maze maze = Mazes.ALL[0];
 
     private final int rowCount = 21;
     private final int columnCount = 19;
@@ -188,13 +169,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private static final int CHASE_FRAMES = 20000 / FRAME_MS;
     private static final int DYING_FRAMES = 1500 / FRAME_MS;
     private static final int LEVEL_CLEAR_FRAMES = 2000 / FRAME_MS;
-    private static final int CHERRY_FRAMES = 10000 / FRAME_MS;
+    private static final int FRUIT_FRAMES = 10000 / FRAME_MS;
     private static final int POPUP_FRAMES = 1000 / FRAME_MS;
 
     private Image wallImage;
     private Image blueGhostImage, orangeGhostImage, pinkGhostImage, redGhostImage, scaredGhostImage;
-    private Image pacmanUpImage, pacmanDownImage, pacmanLeftImage, pacmanRightImage;
-    private Image powerFoodImage, cherryImage, cherry2Image;
+    private Image powerFoodImage, cherryImage;
 
     private boolean[][] walls;
     private boolean[][] food;
@@ -203,9 +183,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private int foodEaten;
 
     private Entity pacman;
+    private Direction facing = Direction.RIGHT;
     private final List<Ghost> ghosts = new ArrayList<>();
-    private Entity cherry;
-    private int cherryTimer = 0;
+    private Entity fruit;
+    private Fruit fruitKind = Fruit.CHERRY;
+    private int fruitTimer = 0;
+    private int fruitCol, fruitRow;
     private final List<Popup> popups = new ArrayList<>();
     private final Sound sound = new Sound();
 
@@ -225,8 +208,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private int score = 0;
     private int highScore = 0;
-    private int savedHighScore = 0;
-    private final int[] bestScores = new int[Difficulty.values().length];
+    private final ScoreBoard[] boards = new ScoreBoard[Difficulty.values().length];
+    private String playerName = "";
+    private int lastRank = -1;
     private int lives = 3;
     private int level = 1;
 
@@ -242,18 +226,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pinkGhostImage = loadImage("pinkGhost.png");
         redGhostImage = loadImage("redGhost.png");
         scaredGhostImage = loadImage("scaredGhost.png");
-        pacmanUpImage = loadImage("pacmanUp.png");
-        pacmanDownImage = loadImage("pacmanDown.png");
-        pacmanLeftImage = loadImage("pacmanLeft.png");
-        pacmanRightImage = loadImage("pacmanRight.png");
         powerFoodImage = loadImage("powerFood.png");
         cherryImage = loadImage("cherry.png");
-        cherry2Image = loadImage("cherry2.png");
 
         for (Difficulty d : Difficulty.values()) {
-            bestScores[d.ordinal()] = loadHighScore(d);
+            boards[d.ordinal()] = new ScoreBoard(d.scoresFile(), d.legacyHighScoreFile());
         }
-        highScore = savedHighScore = bestScores[difficulty.ordinal()];
+        highScore = board().best();
         loadMap();
 
         gameLoop = new Timer(FRAME_MS, this);
@@ -269,23 +248,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         return new ImageIcon(url).getImage();
     }
 
-    private int loadHighScore(Difficulty d) {
-        try {
-            return Integer.parseInt(new String(Files.readAllBytes(d.highScoreFile()), StandardCharsets.UTF_8).trim());
-        } catch (IOException | NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private void saveHighScore() {
-        if (highScore <= savedHighScore) return;
-        try {
-            Files.write(difficulty.highScoreFile(), String.valueOf(highScore).getBytes(StandardCharsets.UTF_8));
-            savedHighScore = highScore;
-            bestScores[difficulty.ordinal()] = highScore;
-        } catch (IOException e) {
-            // not fatal: the high score just won't survive a restart
-        }
+    private ScoreBoard board() {
+        return boards[difficulty.ordinal()];
     }
 
     private void loadMap() {
@@ -295,20 +259,22 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         foodRemaining = 0;
         foodEaten = 0;
         ghosts.clear();
-        cherry = null;
-        cherryTimer = 0;
+        maze = Mazes.forLevel(level);
+        fruit = null;
+        fruitTimer = 0;
         popups.clear();
 
         for (int r = 0; r < rowCount; r++) {
             for (int c = 0; c < columnCount; c++) {
-                char tile = tileMap[r].charAt(c);
+                char tile = maze.rows[r].charAt(c);
                 int x = c * tileSize;
                 int y = r * tileSize;
                 switch (tile) {
                     case 'X': walls[r][c] = true; break;
                     case ' ': food[r][c] = true; foodRemaining++; break;
+                    case 'F': food[r][c] = true; foodRemaining++; fruitCol = c; fruitRow = r; break;
                     case '*': powerFood[r][c] = true; foodRemaining++; break;
-                    case 'P': pacman = new Entity(pacmanRightImage, x, y); break;
+                    case 'P': pacman = new Entity(null, x, y); break;
                     case 'r': ghosts.add(new Ghost('r', redGhostImage, x, y, columnCount - 2, -2, 0)); break;
                     case 'p': ghosts.add(new Ghost('p', pinkGhostImage, x, y, 1, -2, 2000 / FRAME_MS)); break;
                     case 'b': ghosts.add(new Ghost('b', blueGhostImage, x, y, columnCount - 1, rowCount, 5000 / FRAME_MS)); break;
@@ -326,7 +292,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private void resetPositions() {
         pacman.reset();
-        pacman.image = pacmanRightImage;
+        facing = Direction.RIGHT;
         for (Ghost ghost : ghosts) {
             ghost.reset();
         }
@@ -338,8 +304,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     private void newGame(Difficulty chosen) {
         difficulty = chosen;
-        highScore = savedHighScore = bestScores[difficulty.ordinal()];
+        highScore = board().best();
         paused = false;
+        lastRank = -1;
         score = 0;
         lives = difficulty.lives;
         level = 1;
@@ -369,7 +336,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             case DYING:
                 if (--stateTimer <= 0) {
                     if (lives <= 0) {
-                        state = State.GAME_OVER;
+                        state = board().qualifies(score) ? State.NAME_ENTRY : State.GAME_OVER;
                     } else {
                         resetPositions();
                         state = State.READY;
@@ -395,12 +362,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (checkGhostCollisions()) return;
         moveGhosts();
         if (checkGhostCollisions()) return;
-        updateCherry();
+        updateFruit();
 
         if (foodRemaining == 0) {
             state = State.LEVEL_CLEAR;
             stateTimer = LEVEL_CLEAR_FRAMES;
-            saveHighScore();
             sound.levelClear();
         }
     }
@@ -436,16 +402,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
 
         pacman.step(PAC_SPEED);
-        updatePacmanImage();
-    }
-
-    private void updatePacmanImage() {
-        switch (pacman.direction) {
-            case UP: pacman.image = pacmanUpImage; break;
-            case DOWN: pacman.image = pacmanDownImage; break;
-            case LEFT: pacman.image = pacmanLeftImage; break;
-            case RIGHT: pacman.image = pacmanRightImage; break;
-            default: break;
+        if (pacman.direction != Direction.NONE) {
+            facing = pacman.direction;
         }
     }
 
@@ -461,11 +419,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             onFoodEaten();
             frightenGhosts();
         }
-        if (cherry != null && cherry.col() == col && cherry.row() == row) {
-            int points = 100 * level;
-            score += points;
-            popups.add(new Popup(cherry.x, cherry.y, String.valueOf(points), POPUP_FRAMES));
-            cherry = null;
+        if (fruit != null && fruit.col() == col && fruit.row() == row) {
+            score += fruitKind.points;
+            popups.add(new Popup(fruit.x, fruit.y, String.valueOf(fruitKind.points), POPUP_FRAMES));
+            fruit = null;
             sound.fruit();
         }
         highScore = Math.max(highScore, score);
@@ -475,14 +432,15 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         foodRemaining--;
         foodEaten++;
         if (foodEaten == 70 || foodEaten == 140) {
-            cherry = new Entity(level % 2 == 1 ? cherryImage : cherry2Image, 9 * tileSize, 11 * tileSize);
-            cherryTimer = CHERRY_FRAMES;
+            fruitKind = Fruit.forLevel(level);
+            fruit = new Entity(null, fruitCol * tileSize, fruitRow * tileSize);
+            fruitTimer = FRUIT_FRAMES;
         }
     }
 
-    private void updateCherry() {
-        if (cherry != null && --cherryTimer <= 0) {
-            cherry = null;
+    private void updateFruit() {
+        if (fruit != null && --fruitTimer <= 0) {
+            fruit = null;
         }
     }
 
@@ -598,7 +556,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 lives--;
                 state = State.DYING;
                 stateTimer = DYING_FRAMES;
-                saveHighScore();
                 sound.death();
                 return true;
             }
@@ -623,7 +580,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 int x = c * tileSize;
                 int y = r * tileSize;
                 if (walls[r][c]) {
-                    g.drawImage(wallImage, x, y, tileSize, tileSize, null);
+                    if (maze.wallColor == null) {
+                        g.drawImage(wallImage, x, y, tileSize, tileSize, null);
+                    } else {
+                        g.setColor(maze.wallColor);
+                        g.fillRoundRect(x + 2, y + 2, tileSize - 4, tileSize - 4, 8, 8);
+                    }
                 } else if (food[r][c]) {
                     g.setColor(Color.WHITE);
                     g.fillRect(x + 14, y + 14, 4, 4);
@@ -633,12 +595,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             }
         }
 
-        if (cherry != null) {
-            drawEntity(g, cherry, cherry.image);
+        if (fruit != null) {
+            fruitKind.draw(g, fruit.x, fruit.y, tileSize, cherryImage);
         }
 
-        boolean levelClearFlash = state == State.LEVEL_CLEAR;
-        if (!levelClearFlash && state != State.GAME_OVER) {
+        boolean gameEnded = state == State.GAME_OVER || state == State.NAME_ENTRY;
+        if (state != State.LEVEL_CLEAR && state != State.DYING && !gameEnded) {
             for (Ghost ghost : ghosts) {
                 Image img = ghost.normalImage;
                 if (ghost.scared) {
@@ -649,8 +611,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             }
         }
 
-        if (state != State.DYING || (frame / 4) % 2 == 0) {
-            drawEntity(g, pacman, pacman.image);
+        if (!gameEnded) {
+            drawPacman(g, pacman.x, pacman.y, tileSize, facing, pacmanMouthDegrees());
+            // second copy while passing through the side tunnel
+            if (pacman.x > boardWidth - tileSize) {
+                drawPacman(g, pacman.x - boardWidth, pacman.y, tileSize, facing, pacmanMouthDegrees());
+            }
         }
 
         g.setFont(new Font("Arial", Font.BOLD, 14));
@@ -661,20 +627,49 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.drawString(p.text, p.x + (tileSize - w) / 2, p.y + tileSize / 2 - rise);
         }
 
-        if (state != State.MENU) {
+        if (state != State.MENU && state != State.SCORES) {
             drawHud(g);
         }
 
         switch (state) {
             case MENU: drawMenu(g); break;
+            case SCORES: drawAllScores(g); break;
+            case NAME_ENTRY: drawNameEntry(g); break;
+            case GAME_OVER: drawGameOver(g); break;
             case READY: drawBanner(g, "READY!", "Arrow keys / WASD to start  -  M: sound " + (sound.isEnabled() ? "on" : "off"), Color.YELLOW); break;
             case LEVEL_CLEAR: drawBanner(g, "LEVEL " + level + " CLEAR!", null, Color.CYAN); break;
-            case GAME_OVER: drawBanner(g, "GAME OVER", "Press Enter to choose a difficulty", Color.RED); break;
             default: break;
         }
         if (paused) {
             drawBanner(g, "PAUSED", "P: resume  -  Q: quit to menu", Color.WHITE);
         }
+    }
+
+    /** Half-angle of pac man's mouth: chomps while moving, opens up and vanishes when he dies. */
+    private int pacmanMouthDegrees() {
+        if (state == State.DYING) {
+            int elapsed = DYING_FRAMES - stateTimer;
+            return Math.min(180, 30 + elapsed * 150 / (DYING_FRAMES * 2 / 3));
+        }
+        if (state != State.PLAYING || pacman.direction == Direction.NONE) {
+            return 30;
+        }
+        int phase = Math.abs((int) (frame % 8) - 4); // 4,3,2,1,0,1,2,3 - one chomp per tile
+        return 4 + phase * 11;
+    }
+
+    private void drawPacman(Graphics2D g, int x, int y, int size, Direction dir, int mouth) {
+        if (mouth >= 180) return;
+        int angle;
+        switch (dir) {
+            case UP: angle = 90; break;
+            case LEFT: angle = 180; break;
+            case DOWN: angle = 270; break;
+            default: angle = 0; break;
+        }
+        int inset = size / 16;
+        g.setColor(Color.YELLOW);
+        g.fillArc(x + inset, y + inset, size - 2 * inset, size - 2 * inset, angle + mouth, 360 - 2 * mouth);
     }
 
     private void drawEntity(Graphics2D g, Entity e, Image img) {
@@ -709,7 +704,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         int iconSize = tileSize * 2 / 3;
         for (int i = 0; i < lives; i++) {
             int x = boardWidth - (i + 1) * (iconSize + 4) - 4;
-            g.drawImage(pacmanRightImage, x, y + (hudHeight - iconSize) / 2, iconSize, iconSize, null);
+            drawPacman(g, x, y + (hudHeight - iconSize) / 2, iconSize, Direction.RIGHT, 30);
         }
     }
 
@@ -742,7 +737,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 g.setStroke(new BasicStroke(3));
                 g.drawRoundRect(80, top, boardWidth - 160, 80, 16, 16);
                 g.setStroke(new BasicStroke(1));
-                g.drawImage(pacmanRightImage, 96, top + 24, tileSize, tileSize, null);
+                drawPacman(g, 96, top + 24, tileSize, Direction.RIGHT, 20 + (int) Math.abs(frame % 16 - 8) * 3);
             }
 
             g.setFont(new Font("Arial", Font.BOLD, 26));
@@ -753,7 +748,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.setColor(selected ? Color.WHITE : Color.GRAY);
             g.drawString(d.description, 144, top + 58);
 
-            String best = "HI " + bestScores[d.ordinal()];
+            String best = "HI " + boards[d.ordinal()].best();
             fm = g.getFontMetrics();
             g.drawString(best, boardWidth - 96 - fm.stringWidth(best), top + 34);
         }
@@ -762,7 +757,115 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         fm = g.getFontMetrics();
         g.setColor(Color.LIGHT_GRAY);
         String help = "Up/Down or 1/2/3 to choose  -  Enter to start  -  M: sound " + (sound.isEnabled() ? "on" : "off");
-        g.drawString(help, (boardWidth - fm.stringWidth(help)) / 2, 580);
+        g.drawString(help, (boardWidth - fm.stringWidth(help)) / 2, 570);
+        String help2 = "H: top 5 high scores";
+        g.drawString(help2, (boardWidth - fm.stringWidth(help2)) / 2, 596);
+    }
+
+    private void drawCentered(Graphics2D g, String text, int y) {
+        g.drawString(text, (boardWidth - g.getFontMetrics().stringWidth(text)) / 2, y);
+    }
+
+    /** Draws one difficulty's top 5 with the given row highlighted. @return the y below the table */
+    private int drawScoreTable(Graphics2D g, Difficulty d, int top, int highlight) {
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        g.setColor(d.color);
+        drawCentered(g, d.label, top);
+
+        List<ScoreBoard.Entry> entries = boards[d.ordinal()].entries();
+        g.setFont(new Font("Monospaced", Font.BOLD, 18));
+        int left = boardWidth / 2 - 130;
+        int right = boardWidth / 2 + 130;
+        for (int i = 0; i < ScoreBoard.SIZE; i++) {
+            int y = top + 28 + i * 24;
+            boolean hl = i == highlight;
+            if (hl) {
+                g.setColor(new Color(255, 255, 0, 60));
+                g.fillRect(left - 10, y - 18, right - left + 20, 24);
+            }
+            g.setColor(hl ? Color.YELLOW : Color.WHITE);
+            String rank = (i + 1) + ".";
+            if (i < entries.size()) {
+                ScoreBoard.Entry e = entries.get(i);
+                g.drawString(rank + " " + e.name, left, y);
+                String sc = String.valueOf(e.score);
+                g.drawString(sc, right - g.getFontMetrics().stringWidth(sc), y);
+            } else {
+                g.setColor(Color.DARK_GRAY);
+                g.drawString(rank + " ----------", left, y);
+            }
+        }
+        return top + 28 + ScoreBoard.SIZE * 24;
+    }
+
+    private void dimBoard(Graphics2D g) {
+        g.setColor(new Color(0, 0, 0, 215));
+        g.fillRect(0, 0, boardWidth, boardHeight + hudHeight);
+    }
+
+    private void drawAllScores(Graphics2D g) {
+        dimBoard(g);
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+        g.setColor(Color.YELLOW);
+        drawCentered(g, "TOP 5 HIGH SCORES", 70);
+        int y = 120;
+        for (Difficulty d : Difficulty.values()) {
+            y = drawScoreTable(g, d, y, -1) + 40;
+        }
+        g.setFont(new Font("Arial", Font.PLAIN, 15));
+        g.setColor(Color.LIGHT_GRAY);
+        drawCentered(g, "Press any key to go back", boardHeight + 10);
+    }
+
+    private void drawNameEntry(Graphics2D g) {
+        dimBoard(g);
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        g.setColor(Color.YELLOW);
+        drawCentered(g, "NEW HIGH SCORE!", 170);
+
+        g.setFont(new Font("Arial", Font.BOLD, 26));
+        g.setColor(Color.WHITE);
+        drawCentered(g, score + "  (" + difficulty.label + ")", 220);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        drawCentered(g, "Type your name:", 300);
+
+        int boxW = 320;
+        int boxX = (boardWidth - boxW) / 2;
+        g.setColor(new Color(40, 40, 60));
+        g.fillRoundRect(boxX, 320, boxW, 56, 12, 12);
+        g.setColor(Color.YELLOW);
+        g.setStroke(new BasicStroke(2));
+        g.drawRoundRect(boxX, 320, boxW, 56, 12, 12);
+        g.setStroke(new BasicStroke(1));
+
+        g.setFont(new Font("Monospaced", Font.BOLD, 30));
+        String shown = playerName + ((frame / 12) % 2 == 0 ? "_" : " ");
+        drawCentered(g, shown, 358);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 15));
+        g.setColor(Color.LIGHT_GRAY);
+        drawCentered(g, "Letters / numbers, Backspace to erase, Enter to save", 420);
+    }
+
+    private void drawGameOver(Graphics2D g) {
+        dimBoard(g);
+        g.setFont(new Font("Arial", Font.BOLD, 48));
+        g.setColor(Color.RED);
+        drawCentered(g, "GAME OVER", 130);
+
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        g.setColor(Color.WHITE);
+        drawCentered(g, "SCORE " + score + "   -   LEVEL " + level, 180);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 16));
+        g.setColor(Color.LIGHT_GRAY);
+        drawCentered(g, "Top 5", 240);
+        drawScoreTable(g, difficulty, 275, lastRank);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 16));
+        g.setColor(Color.LIGHT_GRAY);
+        drawCentered(g, "Press Enter to go back to the menu", 500);
     }
 
     private void drawBanner(Graphics2D g, String title, String subtitle, Color color) {
@@ -795,6 +898,14 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
+        if (state == State.NAME_ENTRY) {
+            handleNameKey(e);
+            return;
+        }
+        if (state == State.SCORES) {
+            state = State.MENU;
+            return;
+        }
         if (key == KeyEvent.VK_M) {
             sound.toggle();
             return;
@@ -811,7 +922,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
         if (paused && key == KeyEvent.VK_Q) {
             paused = false;
-            saveHighScore();
             state = State.MENU;
             return;
         }
@@ -845,7 +955,27 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             case KeyEvent.VK_2: case KeyEvent.VK_NUMPAD2: newGame(Difficulty.MEDIUM); break;
             case KeyEvent.VK_3: case KeyEvent.VK_NUMPAD3: newGame(Difficulty.HARD); break;
             case KeyEvent.VK_ENTER: case KeyEvent.VK_SPACE: newGame(difficulty); break;
+            case KeyEvent.VK_H: state = State.SCORES; break;
             default: break;
+        }
+    }
+
+    private void handleNameKey(KeyEvent e) {
+        int key = e.getKeyCode();
+        char ch = Character.toUpperCase(e.getKeyChar());
+        if (key == KeyEvent.VK_ENTER) {
+            String name = playerName.trim();
+            if (name.isEmpty()) name = "PLAYER";
+            playerName = name; // remembered as the default for the next high score
+            lastRank = board().add(name, score);
+            state = State.GAME_OVER;
+        } else if (key == KeyEvent.VK_BACK_SPACE) {
+            if (!playerName.isEmpty()) {
+                playerName = playerName.substring(0, playerName.length() - 1);
+            }
+        } else if (playerName.length() < ScoreBoard.MAX_NAME_LENGTH
+                && ((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == ' ')) {
+            playerName += ch;
         }
     }
 
