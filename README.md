@@ -4,7 +4,7 @@
 
 **A maze-chase arcade game written in Java Swing, plus a browser version you can play on a phone.**
 
-### [▶ Play it in your browser](https://sathirapramudith123.github.io/pacman/)
+### [▶ Play it in your browser](https://sathirapramudith123.github.io/maze-muncher/)
 
 ![Java](https://img.shields.io/badge/Java-11%2B-orange?logo=openjdk&logoColor=white)
 ![Swing](https://img.shields.io/badge/UI-Swing-blue)
@@ -50,7 +50,7 @@
 | 🎮 **Classic gameplay** | Pellets, power pellets, side tunnels, frightened ghosts, lives and levels |
 | 👻 **Four ghost personalities** | Each ghost hunts you differently, and they switch between chasing and scattering |
 | 👀 **Ghost eyes** | An eaten ghost turns into eyes that race home along the shortest path, then revive |
-| 🗺️ **Four mazes** | Classic, Arena, Tunnels and Cross, each with its own wall colour |
+| 🗺️ **Eight mazes** | Classic, Arena, Tunnels, Cross, Spiral, Islands, Fortress and Zigzag, each with its own wall colour |
 | 🍒 **Six bonus fruits** | A new fruit every level, from Cherry (100) to Grapes (2000) |
 | 🎚️ **Three difficulties** | Easy, Medium and Hard change lives, ghost speed, ghost smarts and power-up time |
 | 🏆 **Top 5 high scores** | Enter your name when you make the table; each difficulty has its own |
@@ -87,7 +87,7 @@ java App
 
 ### Browser (no Java needed)
 
-**Play online:** https://sathirapramudith123.github.io/pacman/
+**Play online:** https://sathirapramudith123.github.io/maze-muncher/
 
 Or open **`web/index.html`** from your copy of the repo in any modern browser. It plays the same as
 the Java version. On a phone you steer by swiping on the maze or with the on-screen pad.
@@ -172,7 +172,20 @@ That's a good moment to clear a crowded area.
 
 ### Mazes
 
-The levels cycle through four mazes: **Classic** (blue) → **Arena** (purple) → **Tunnels** (orange) → **Cross** (green) → back to Classic.
+Levels 1 to 8 each have their own maze, and from level 9 on every level picks one of the eight at
+random (never the same one twice in a row):
+
+| Level | Maze | Walls | What's special |
+| :---: | --- | --- | --- |
+| 1 | Classic | 🔵 Blue | The original layout |
+| 2 | Arena | 🟣 Purple | Long open corridors along the top and bottom |
+| 3 | Tunnels | 🟠 Orange | Three pairs of side tunnels |
+| 4 | Cross | 🟢 Green | No side tunnels, so there's no easy escape |
+| 5 | Spiral | 🩷 Pink | Winding rings around the middle |
+| 6 | Islands | 🩵 Cyan | A grid of small blocks, paths everywhere |
+| 7 | Fortress | 🔴 Red | Only two power pellets |
+| 8 | Zigzag | 🟡 Mustard | Zigzag corridors and three pairs of tunnels |
+| 9+ | Random | | Any of the eight, never the same twice in a row |
 The side exits of a maze are tunnels that wrap around to the other side.
 
 ### High scores
@@ -215,8 +228,8 @@ A banner pops up the moment you earn one, and the achievements screen shows all 
 | Maze Runner | Clear a level |
 | Untouchable | Clear a level without losing a life |
 | Brave Heart | Clear a level on Hard |
-| Explorer | Reach level 4 and see all four mazes |
-| Marathon | Reach level 6 |
+| Explorer | Reach level 8 and see all eight mazes |
+| Marathon | Reach level 10 |
 | 1UP | Score 10,000 points and earn an extra life |
 | High Roller | Score 30,000 points in one game |
 | Architect | Play a maze you built in the editor |
@@ -255,7 +268,7 @@ pacman/
 │   └── src/
 │       ├── App.java          # Opens the game window
 │       ├── PacMan.java       # The game: loop, movement, ghost AI, drawing, menus, input
-│       ├── Mazes.java        # The four maze layouts
+│       ├── Mazes.java        # The eight maze layouts
 │       ├── Fruit.java        # Bonus fruit types, points and drawings
 │       ├── ScoreBoard.java   # Top 5 high scores per difficulty
 │       ├── Achievements.java # The twelve badges and the unlock banner

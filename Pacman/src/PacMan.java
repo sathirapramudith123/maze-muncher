@@ -163,6 +163,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     private Mazes.Maze maze = Mazes.ALL[0];
+    private int mazeIndex = 0;
 
     private final int rowCount = 21;
     private final int columnCount = 19;
@@ -340,7 +341,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         foodRemaining = 0;
         foodEaten = 0;
         ghosts.clear();
-        maze = customMaze != null ? customMaze : Mazes.forLevel(level);
+        if (customMaze != null) {
+            maze = customMaze;
+        } else {
+            mazeIndex = Mazes.indexForLevel(level, mazeIndex, random);
+            maze = Mazes.ALL[mazeIndex];
+        }
         boolean hasFruitSpot = false;
         fruit = null;
         fruitTimer = 0;
@@ -474,8 +480,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 if (--stateTimer <= 0) {
                     level++;
                     diedThisLevel = false;
-                    if (customMaze == null && level >= 4) achievements.unlock("explorer");
-                    if (customMaze == null && level >= 6) achievements.unlock("marathon");
+                    if (customMaze == null && level >= 8) achievements.unlock("explorer");
+                    if (customMaze == null && level >= 10) achievements.unlock("marathon");
                     loadMap();
                     resetPositions();
                     state = State.READY;

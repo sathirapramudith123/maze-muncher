@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Maze Muncher</title>
-<meta name="description" content="Maze Muncher: a maze-chase arcade game in your browser, with four mazes, three difficulties, achievements, a maze editor, and swipe or d-pad controls on phones.">
+<meta name="description" content="Maze Muncher: a maze-chase arcade game in your browser, with eight mazes, three difficulties, achievements, a maze editor, and swipe or d-pad controls on phones.">
 <meta name="theme-color" content="#07081a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23ffd52e' d='M10 10 17.8 5.5A9 9 0 1 0 17.8 14.5Z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -611,6 +611,98 @@ const MAZES = [
     "X*XXX XX X XX XXX*X",
     "X                 X",
     "XXXXXXXXXXXXXXXXXXX",
+  ] },
+  { name: "SPIRAL", wall: "#ff5fa2", rows: [
+    "XXXXXXXXXXXXXXXXXXX",
+    "X*               *X",
+    "X XXXXXX X XXXXXX X",
+    "X X      X      X X",
+    "X X XXXX X XXXX X X",
+    "X X X         X X X",
+    "X   X XX X XX X   X",
+    "XXX X X     X X XXX",
+    "XXX X X XrX X X XXX",
+    "O     X bpo X     O",
+    "XXX X XXXXXXX X XXX",
+    "XXX X    F    X XXX",
+    "X   XXXX X XXXX   X",
+    "X X      X      X X",
+    "X X XXXX X XXXX X X",
+    "X X X    P    X X X",
+    "X X X XXX XXX X X X",
+    "X   X         X   X",
+    "X XXX XXXXXXX XXX X",
+    "X*               *X",
+    "XXXXXXXXXXXXXXXXXXX",
+  ] },
+  { name: "ISLANDS", wall: "#1fc8e3", rows: [
+    "XXXXXXXXXXXXXXXXXXX",
+    "X*               *X",
+    "X X X X X X X X X X",
+    "X                 X",
+    "X X X X X X X X X X",
+    "X                 X",
+    "X X X X XXX X X X X",
+    "X                 X",
+    "XXX X X XrX X X XXX",
+    "O     X bpo X     O",
+    "XXX X XXXXXXX X XXX",
+    "X        F        X",
+    "X X X X X X X X X X",
+    "X                 X",
+    "X X X X X X X X X X",
+    "X        P        X",
+    "X X X X X X X X X X",
+    "X                 X",
+    "X X X X X X X X X X",
+    "X*               *X",
+    "XXXXXXXXXXXXXXXXXXX",
+  ] },
+  { name: "FORTRESS", wall: "#e5383b", rows: [
+    "XXXXXXXXXXXXXXXXXXX",
+    "X                 X",
+    "X XXX XXXXXXX XXX X",
+    "X X             X X",
+    "X X XXXXXXXXXXX X X",
+    "X X X         X X X",
+    "X   X XX X XX X   X",
+    "XXX X X     X X XXX",
+    "XXX X X XrX X X XXX",
+    "O     X bpo X     O",
+    "XXX X XXXXXXX X XXX",
+    "X   X    F    X   X",
+    "X X XXXX X XXXX X X",
+    "X X      X      X X",
+    "X XXXX X X X XXXX X",
+    "X      X P X      X",
+    "XXX XX X X X XX XXX",
+    "X*       X       *X",
+    "X XXXXXX X XXXXXX X",
+    "X                 X",
+    "XXXXXXXXXXXXXXXXXXX",
+  ] },
+  { name: "ZIGZAG", wall: "#c9b400", rows: [
+    "XXXXXXXXXXXXXXXXXXX",
+    "X*       X       *X",
+    "X XXXXXX X XXXXXX X",
+    "O  X     O     X  O",
+    "XX X XXXXXXXXX X XX",
+    "X    X       X    X",
+    "X XXXX XX XX XXXX X",
+    "X                 X",
+    "XXX X X XrX X X XXX",
+    "O     X bpo X     O",
+    "XXX X XXXXXXX X XXX",
+    "X   X    F    X   X",
+    "X XXXX X X X XXXX X",
+    "O  X   X O X   X  O",
+    "XX X XXX X XXX X XX",
+    "X    X   P   X    X",
+    "X XXXX XX XX XXXX X",
+    "X      X   X      X",
+    "X XXXX X X X XXXX X",
+    "X*               *X",
+    "XXXXXXXXXXXXXXXXXXX",
   ] }
 ];
 
@@ -748,8 +840,8 @@ const ACHIEVEMENTS = [
   { id: 'level_clear', name: 'Maze Runner', desc: 'Clear a level' },
   { id: 'flawless', name: 'Untouchable', desc: 'Clear a level without losing a life' },
   { id: 'brave', name: 'Brave Heart', desc: 'Clear a level on Hard' },
-  { id: 'explorer', name: 'Explorer', desc: 'Reach level 4 and see all four mazes' },
-  { id: 'marathon', name: 'Marathon', desc: 'Reach level 6' },
+  { id: 'explorer', name: 'Explorer', desc: 'Reach level 8 and see all eight mazes' },
+  { id: 'marathon', name: 'Marathon', desc: 'Reach level 10' },
   { id: 'one_up', name: '1UP', desc: 'Score 10,000 points and earn an extra life' },
   { id: 'high_roller', name: 'High Roller', desc: 'Score 30,000 points in one game' },
   { id: 'architect', name: 'Architect', desc: 'Play a maze you built in the editor' },
@@ -788,6 +880,7 @@ const G = {
   scaredTimer: 0, ghostCombo: 0, modeTimer: 0, scatter: true,
   score: 0, hi: 0, lives: 3, level: 1, extraLife: false, lastRank: -1, playerName: '',
   custom: null,          // a maze from the editor, or null for the built-in mazes
+  mazeIndex: 0,
   diedThisLevel: false,
 };
 let maze, walls, food, power, foodRemaining, foodEaten;
@@ -809,8 +902,16 @@ function isWall(c, r) {
   return walls[r][mod(c, COLS)];
 }
 
+/** Levels 1-8 go through the mazes in order; after that each level picks one at random, never the previous one. */
+function mazeIndexFor(level, previous) {
+  if (level <= MAZES.length) return level - 1;
+  const next = Math.floor(Math.random() * (MAZES.length - 1));
+  return next >= previous ? next + 1 : next;
+}
+
 function loadMap() {
-  maze = G.custom || MAZES[(G.level - 1) % MAZES.length];
+  if (!G.custom) G.mazeIndex = mazeIndexFor(G.level, G.mazeIndex);
+  maze = G.custom || MAZES[G.mazeIndex];
   let hasFruitSpot = false;
   walls = []; food = []; power = [];
   foodRemaining = 0; foodEaten = 0;
@@ -902,8 +1003,8 @@ function update() {
     if (--G.stateTimer <= 0) {
       G.level++;
       G.diedThisLevel = false;
-      if (!G.custom && G.level >= 4) Ach.unlock('explorer');
-      if (!G.custom && G.level >= 6) Ach.unlock('marathon');
+      if (!G.custom && G.level >= 8) Ach.unlock('explorer');
+      if (!G.custom && G.level >= 10) Ach.unlock('marathon');
       loadMap();
       resetPositions();
       setState('READY');

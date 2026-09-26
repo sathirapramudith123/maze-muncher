@@ -1,6 +1,7 @@
 import java.awt.Color;
+import java.util.Random;
 
-/** Maze layouts. Each level uses the next maze, cycling back to the first after the last. */
+/** Maze layouts: eight of them, used in order for levels 1-8 and then picked at random. */
 final class Mazes {
 
     // X = wall, O = empty (no food), P = pac man, * = power food, ' ' = food
@@ -111,11 +112,109 @@ final class Mazes {
             "X*XXX XX X XX XXX*X",
             "X                 X",
             "XXXXXXXXXXXXXXXXXXX"
+        }),
+        new Maze("SPIRAL", new Color(0xFF5FA2), new String[] {
+            "XXXXXXXXXXXXXXXXXXX",
+            "X*               *X",
+            "X XXXXXX X XXXXXX X",
+            "X X      X      X X",
+            "X X XXXX X XXXX X X",
+            "X X X         X X X",
+            "X   X XX X XX X   X",
+            "XXX X X     X X XXX",
+            "XXX X X XrX X X XXX",
+            "O     X bpo X     O",
+            "XXX X XXXXXXX X XXX",
+            "XXX X    F    X XXX",
+            "X   XXXX X XXXX   X",
+            "X X      X      X X",
+            "X X XXXX X XXXX X X",
+            "X X X    P    X X X",
+            "X X X XXX XXX X X X",
+            "X   X         X   X",
+            "X XXX XXXXXXX XXX X",
+            "X*               *X",
+            "XXXXXXXXXXXXXXXXXXX"
+        }),
+        new Maze("ISLANDS", new Color(0x1FC8E3), new String[] {
+            "XXXXXXXXXXXXXXXXXXX",
+            "X*               *X",
+            "X X X X X X X X X X",
+            "X                 X",
+            "X X X X X X X X X X",
+            "X                 X",
+            "X X X X XXX X X X X",
+            "X                 X",
+            "XXX X X XrX X X XXX",
+            "O     X bpo X     O",
+            "XXX X XXXXXXX X XXX",
+            "X        F        X",
+            "X X X X X X X X X X",
+            "X                 X",
+            "X X X X X X X X X X",
+            "X        P        X",
+            "X X X X X X X X X X",
+            "X                 X",
+            "X X X X X X X X X X",
+            "X*               *X",
+            "XXXXXXXXXXXXXXXXXXX"
+        }),
+        new Maze("FORTRESS", new Color(0xE5383B), new String[] {
+            "XXXXXXXXXXXXXXXXXXX",
+            "X                 X",
+            "X XXX XXXXXXX XXX X",
+            "X X             X X",
+            "X X XXXXXXXXXXX X X",
+            "X X X         X X X",
+            "X   X XX X XX X   X",
+            "XXX X X     X X XXX",
+            "XXX X X XrX X X XXX",
+            "O     X bpo X     O",
+            "XXX X XXXXXXX X XXX",
+            "X   X    F    X   X",
+            "X X XXXX X XXXX X X",
+            "X X      X      X X",
+            "X XXXX X X X XXXX X",
+            "X      X P X      X",
+            "XXX XX X X X XX XXX",
+            "X*       X       *X",
+            "X XXXXXX X XXXXXX X",
+            "X                 X",
+            "XXXXXXXXXXXXXXXXXXX"
+        }),
+        new Maze("ZIGZAG", new Color(0xC9B400), new String[] {
+            "XXXXXXXXXXXXXXXXXXX",
+            "X*       X       *X",
+            "X XXXXXX X XXXXXX X",
+            "O  X     O     X  O",
+            "XX X XXXXXXXXX X XX",
+            "X    X       X    X",
+            "X XXXX XX XX XXXX X",
+            "X                 X",
+            "XXX X X XrX X X XXX",
+            "O     X bpo X     O",
+            "XXX X XXXXXXX X XXX",
+            "X   X    F    X   X",
+            "X XXXX X X X XXXX X",
+            "O  X   X O X   X  O",
+            "XX X XXX X XXX X XX",
+            "X    X   P   X    X",
+            "X XXXX XX XX XXXX X",
+            "X      X   X      X",
+            "X XXXX X X X XXXX X",
+            "X*               *X",
+            "XXXXXXXXXXXXXXXXXXX"
         })
     };
 
-    static Maze forLevel(int level) {
-        return ALL[(level - 1) % ALL.length];
+    /**
+     * Which maze a level uses: levels 1-8 go through the mazes in order, and after that each level
+     * picks one at random, never the same as the level before.
+     */
+    static int indexForLevel(int level, int previousIndex, Random random) {
+        if (level <= ALL.length) return level - 1;
+        int next = random.nextInt(ALL.length - 1);
+        return next >= previousIndex ? next + 1 : next;   // skip the previous maze
     }
 
     private Mazes() {}
