@@ -4,7 +4,7 @@
 
 **A maze-chase arcade game written in Java Swing, plus a browser version you can play on a phone.**
 
-### [▶ Play it in your browser](https://sathirapramudith123.github.io/pacman/)
+### [▶ Play it in your browser](https://sathirapramudith123.github.io/maze-muncher/)
 
 ![Java](https://img.shields.io/badge/Java-11%2B-orange?logo=openjdk&logoColor=white)
 ![Swing](https://img.shields.io/badge/UI-Swing-blue)
@@ -87,7 +87,7 @@ java App
 
 ### Browser (no Java needed)
 
-**Play online:** https://sathirapramudith123.github.io/pacman/
+**Play online:** https://sathirapramudith123.github.io/maze-muncher/
 
 Or open **`web/index.html`** from your copy of the repo in any modern browser. It plays the same as
 the Java version. On a phone you steer by swiping on the maze or with the on-screen pad.
